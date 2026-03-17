@@ -856,8 +856,8 @@ function TripCard({ trip, onClick }) {
         <span style={{ fontWeight:700, color:C.green }}>❤️ </span>{trip.loves.substring(0,92)}…
       </div>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:`1px solid ${C.seafoamDeep}`, paddingTop:"11px" }}>
-        <div style={{ fontSize:"11px", color:C.muted }}>by <strong style={{ color:C.slateMid }}>{trip.author}</strong> · {trip.date}</div>
-        <div style={{ fontSize:"11px", color:C.azureDeep, fontWeight:600 }}>{trip.travelers}</div>
+        <div style={{ fontSize:"11px", color:C.muted }}>by <strong onClick={e => { e.stopPropagation(); window.__setViewingProfile && window.__setViewingProfile(trip.author); }} style={{ color:C.amber, cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted" }}>{trip.author}</strong> · {trip.date}</div>
+        <div style={{ fontSize:"11px", color:C.slateMid, fontWeight:600 }}>{trip.travelers}</div>
       </div>
     </div>
   );
@@ -1005,12 +1005,12 @@ Day N - Title - Date
 Start by asking: Where did you go and when?`;
 
 // ── Submit Trip Modal ─────────────────────────────────────────────────────────
-function SubmitTripModal({ onClose }) {
+function SubmitTripModal({ onClose, currentUser, displayName }) {
   const [step, setStep] = useState("prompt");
   const [pastedText, setPastedText] = useState("");
   const [filterResult, setFilterResult] = useState(null);
-  const [submitterName, setSubmitterName] = useState("");
-  const [submitterEmail, setSubmitterEmail] = useState("");
+  const [submitterName, setSubmitterName] = useState(displayName || "");
+  const [submitterEmail, setSubmitterEmail] = useState(currentUser?.email || "");
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [form, setForm] = useState({
     title:"", destination:"", region:"Europe", duration:"", travelers:"", date:"", tags:[], loves:"", doNext:"",
@@ -1311,6 +1311,178 @@ function AdminQueueModal({ onClose }) {
   );
 }
 
+
+// ── Auth & Profile Components ─────────────────────────────────────────────────
+
+// ── Auth Modal (Login / Register) ─────────────────────────────────────────────
+function AuthModal({ onClose, onSuccess }) {
+  const [mode, setMode] = useState("login"); // login | register
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const inp = { width:"100%", padding:"10px 13px", borderRadius:"8px", border:`1px solid ${C.tide}`, fontSize:"13px", outline:"none", boxSizing:"border-box", fontFamily:"inherit", background:C.white, color:C.slate, marginBottom:"10px" };
+
+  const handleRegister = async () => {
+    if (!displayName.trim()) { setError("Please enter a display name."); return; }
+    if (!email.trim()) { setError("Please enter your email."); return; }
+    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    setLoading(true); setError("");
+    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+    if (signUpError) { setError(signUpError.message); setLoading(false); return; }
+    // Create profile record
+    if (data.user) {
+      await supabase.from("profiles").insert([{
+        id: data.user.id,
+        display_name: displayName.trim(),
+        email: email.trim(),
+        created_at: new Date().toISOString()
+      }]);
+    }
+    setLoading(false);
+    onSuccess({ user: data.user, displayName: displayName.trim() });
+  };
+
+  const handleLogin = async () => {
+    if (!email.trim() || !password) { setError("Please enter email and password."); return; }
+    setLoading(true); setError("");
+    const { data, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
+    if (loginError) { setError(loginError.message); setLoading(false); return; }
+    // Fetch profile
+    const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
+    setLoading(false);
+    onSuccess({ user: data.user, displayName: profile?.display_name || email });
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(44,62,80,0.75)", zIndex:4000, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(8px)", padding:"20px" }}>
+      <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"400px", overflow:"hidden", boxShadow:`0 32px 64px rgba(28,43,58,0.25)`, border:`1px solid ${C.tide}` }}>
+        <div style={{ padding:"24px 28px", borderBottom:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif" }}>
+            {mode === "login" ? "Welcome Back" : "Create Account"}
+          </div>
+          <button onClick={onClose} style={{ background:C.seafoamDeep, border:"none", color:C.slateLight, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>x</button>
+        </div>
+        <div style={{ padding:"24px 28px" }}>
+          {/* Mode toggle */}
+          <div style={{ display:"flex", background:C.seafoam, borderRadius:"10px", padding:"3px", marginBottom:"20px" }}>
+            {[["login","Sign In"],["register","Create Account"]].map(([m,l]) => (
+              <button key={m} onClick={() => { setMode(m); setError(""); }} style={{ flex:1, padding:"8px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:700, background:mode===m?C.white:"transparent", color:mode===m?C.slate:C.muted, boxShadow:mode===m?`0 1px 4px rgba(28,43,58,0.1)`:"none", transition:"all .15s" }}>{l}</button>
+            ))}
+          </div>
+          {mode === "register" && (
+            <div>
+              <label style={{ fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" }}>Display Name</label>
+              <input style={inp} placeholder="How you'll appear on your trips" value={displayName} onChange={e=>setDisplayName(e.target.value)} />
+            </div>
+          )}
+          <div>
+            <label style={{ fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" }}>Email</label>
+            <input style={inp} type="email" placeholder="your@email.com" value={email} onChange={e=>setEmail(e.target.value)} />
+          </div>
+          <div>
+            <label style={{ fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" }}>Password</label>
+            <input style={inp} type="password" placeholder={mode==="register"?"At least 6 characters":"Your password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&(mode==="login"?handleLogin():handleRegister())} />
+          </div>
+          {error && <div style={{ fontSize:"12px", color:C.red, background:C.redBg, padding:"8px 12px", borderRadius:"7px", marginBottom:"10px" }}>{error}</div>}
+          <button onClick={mode==="login"?handleLogin:handleRegister} disabled={loading} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", background:loading?C.tide:C.cta, color:loading?C.muted:C.ctaText, fontWeight:700, fontSize:"14px", cursor:loading?"not-allowed":"pointer", fontFamily:"'Nunito',sans-serif", transition:"all .15s" }}>
+            {loading ? "Please wait…" : mode==="login" ? "Sign In" : "Create Account"}
+          </button>
+          <div style={{ textAlign:"center", marginTop:"14px", fontSize:"12px", color:C.muted }}>
+            {mode==="login" ? "Don't have an account? " : "Already have an account? "}
+            <button onClick={() => { setMode(mode==="login"?"register":"login"); setError(""); }} style={{ background:"none", border:"none", color:C.amber, fontWeight:700, cursor:"pointer", fontSize:"12px" }}>
+              {mode==="login" ? "Create one" : "Sign in"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Profile Page ──────────────────────────────────────────────────────────────
+function ProfilePage({ authorName, allTrips, onClose, onTripClick }) {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const contributorTrips = allTrips.filter(t =>
+    (t.author || "").toLowerCase() === authorName.toLowerCase()
+  );
+
+  useEffect(() => {
+    supabase.from("profiles").select("*")
+      .ilike("display_name", authorName)
+      .single()
+      .then(({ data }) => { setProfile(data); setLoading(false); });
+  }, [authorName]);
+
+  const memberSince = profile?.created_at
+    ? new Date(profile.created_at).toLocaleDateString("en-US", { month:"long", year:"numeric" })
+    : null;
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(44,62,80,0.7)", zIndex:2000, display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"28px 16px", overflowY:"auto", backdropFilter:"blur(6px)" }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"880px", overflow:"hidden", boxShadow:`0 32px 64px rgba(28,43,58,0.2)`, border:`1px solid ${C.tide}` }}>
+
+        {/* Profile header */}
+        <div style={{ background:`linear-gradient(135deg,#2C1810 0%,#3D2B1F 100%)`, padding:"36px 32px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:"18px" }}>
+              {/* Avatar */}
+              <div style={{ width:"64px", height:"64px", borderRadius:"50%", background:"rgba(196,168,130,0.3)", border:"2px solid rgba(196,168,130,0.5)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", fontWeight:800, color:"#FAF7F2", fontFamily:"'Playfair Display',serif", flexShrink:0 }}>
+                {authorName.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <div style={{ fontSize:"24px", fontWeight:700, color:"#FAF7F2", fontFamily:"'Playfair Display',Georgia,serif", marginBottom:"4px" }}>{authorName}</div>
+                <div style={{ display:"flex", gap:"16px", flexWrap:"wrap" }}>
+                  <span style={{ fontSize:"12px", color:"rgba(196,168,130,0.9)" }}>🗺️ {contributorTrips.length} blueprint{contributorTrips.length!==1?"s":""}</span>
+                  {memberSince && <span style={{ fontSize:"12px", color:"rgba(196,168,130,0.9)" }}>📅 Member since {memberSince}</span>}
+                </div>
+              </div>
+            </div>
+            <button onClick={onClose} style={{ background:"rgba(196,168,130,0.2)", border:"none", color:"#FAF7F2", borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px", flexShrink:0 }}>x</button>
+          </div>
+        </div>
+
+        {/* Trips grid */}
+        <div style={{ padding:"24px 28px" }}>
+          <div style={{ fontSize:"13px", fontWeight:700, color:C.slate, marginBottom:"16px", fontFamily:"'Playfair Display',serif" }}>
+            Blueprints by {authorName}
+          </div>
+          {contributorTrips.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"40px", color:C.muted }}>
+              <div style={{ fontSize:"32px", marginBottom:"10px" }}>✈️</div>
+              <div style={{ fontWeight:600 }}>No published trips yet</div>
+            </div>
+          ) : (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:"14px" }}>
+              {contributorTrips.map(trip => (
+                <div key={trip.id} onClick={() => { onTripClick(trip); onClose(); }}
+                  style={{ background:C.white, border:`1px solid ${C.tide}`, borderRadius:"14px", padding:"18px", cursor:"pointer", transition:"all .2s", boxShadow:`0 1px 4px rgba(28,43,58,0.05)` }}
+                  onMouseEnter={e => { e.currentTarget.style.boxShadow=`0 6px 20px rgba(28,43,58,0.1)`; e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.borderColor=C.amber; }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow=`0 1px 4px rgba(28,43,58,0.05)`; e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=C.tide; }}>
+                  <div style={{ fontSize:"10px", fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"4px" }}>{trip.region}</div>
+                  <div style={{ fontSize:"15px", fontWeight:700, color:C.slate, fontFamily:"'Playfair Display',serif", marginBottom:"4px", lineHeight:1.2 }}>{trip.title}</div>
+                  <div style={{ fontSize:"11px", color:C.slateLight, marginBottom:"8px" }}>{trip.destination} · {trip.duration}</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:"4px", marginBottom:"8px" }}>
+                    {(trip.tags||[]).slice(0,3).map(t => <span key={t} style={{ fontSize:"10px", padding:"2px 8px", borderRadius:"20px", background:C.seafoam, color:C.slateMid, border:`1px solid ${C.tide}` }}>{t}</span>)}
+                  </div>
+                  <div style={{ fontSize:"11px", color:C.slateMid, lineHeight:1.5 }}>
+                    <span style={{ color:C.green, fontWeight:700 }}>❤️ </span>{(trip.loves||"").substring(0,80)}…
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Admin Config ──────────────────────────────────────────────────────────────
 // To add more admins, add their password to this array
 const ADMIN_PASSWORDS = ["Guinness"];
@@ -1475,6 +1647,9 @@ export default function App() {
   const [tag, setTag] = useState("All");
 
   // Load from Supabase on mount
+  // Expose profile setter for card author clicks
+  useEffect(() => { window.__setViewingProfile = setViewingProfile; }, []);
+
   useEffect(() => {
     supabase.from("trips").select("*").eq("status","published").order("created_at", { ascending: false })
       .then(({ data, error }) => {
@@ -1492,6 +1667,36 @@ export default function App() {
   }, []);
 
   const allTrips = [...dbTrips, ...trips];
+
+  // Auth state
+  const [currentUser, setCurrentUser] = useState(null);
+  const [currentDisplayName, setCurrentDisplayName] = useState("");
+  const [showAuth, setShowAuth] = useState(false);
+  const [viewingProfile, setViewingProfile] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        supabase.from("profiles").select("*").eq("id", session.user.id).single()
+          .then(({ data }) => {
+            setCurrentUser(session.user);
+            setCurrentDisplayName(data?.display_name || session.user.email);
+          });
+      }
+    });
+  }, []);
+
+  const handleAuthSuccess = ({ user, displayName }) => {
+    setCurrentUser(user);
+    setCurrentDisplayName(displayName);
+    setShowAuth(false);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setCurrentUser(null);
+    setCurrentDisplayName("");
+  };
 
   // Admin state
   const isAdminUrl = window.location.pathname === "/admin" || window.location.hash === "#admin";
@@ -1537,7 +1742,17 @@ export default function App() {
             {isAdmin && <button onClick={() => setShowQueue(true)} style={{ background:C.amberBg, color:C.amber, border:`1px solid ${C.amber}44`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>📋 Queue</button>}
             {isAdmin && <button onClick={() => setShowImport(true)} style={{ background:C.seafoam, color:C.slateMid, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>🤖 Smart Import</button>}
             {isAdmin && <button onClick={() => setShowAdd(true)} style={{ background:C.cta, color:C.ctaText, border:"none", borderRadius:"8px", padding:"7px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 3px 12px rgba(196,168,130,0.4)` }}>+ Add Blueprint</button>}
-            {!isAdmin && <button onClick={() => setShowAdminLogin(true)} style={{ background:C.seafoam, color:C.muted, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 12px", fontSize:"11px", fontWeight:600, cursor:"pointer", opacity:0.4 }}>🔐</button>}
+            {!isAdmin && !currentUser && <button onClick={() => setShowAuth(true)} style={{ background:C.seafoam, color:C.slateMid, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>Sign In</button>}
+            {!isAdmin && currentUser && (
+              <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                <button onClick={() => setViewingProfile(currentDisplayName)} style={{ background:C.seafoam, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"6px 12px", fontSize:"12px", fontWeight:600, color:C.slate, cursor:"pointer", display:"flex", alignItems:"center", gap:"6px" }}>
+                  <span style={{ width:"22px", height:"22px", borderRadius:"50%", background:C.cta, display:"inline-flex", alignItems:"center", justifyContent:"center", fontSize:"11px", fontWeight:800, color:C.ctaText }}>{currentDisplayName.charAt(0).toUpperCase()}</span>
+                  {currentDisplayName}
+                </button>
+                <button onClick={handleSignOut} style={{ background:"none", border:"none", color:C.muted, fontSize:"11px", cursor:"pointer", padding:"4px" }}>Sign out</button>
+              </div>
+            )}
+            {!isAdmin && <button onClick={() => setShowAdminLogin(true)} style={{ background:C.seafoam, color:C.muted, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 12px", fontSize:"11px", fontWeight:600, cursor:"pointer", opacity:0.3 }}>🔐</button>}
           </div>
         </div>
       </nav>
@@ -1628,7 +1843,9 @@ export default function App() {
       {selected      && <TripModal trip={selected} onClose={() => setSelected(null)} />}
       {showAdd       && <AddTripModal onClose={() => setShowAdd(false)} onAdd={t => setTrips(p=>[t,...p])} />}
       {showImport    && <SmartImportHub onClose={() => setShowImport(false)} />}
-      {showSubmit    && <SubmitTripModal onClose={() => setShowSubmit(false)} />}
+      {showSubmit    && <SubmitTripModal onClose={() => setShowSubmit(false)} currentUser={currentUser} displayName={currentDisplayName} />}
+      {showAuth      && <AuthModal onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} />}
+      {viewingProfile && <ProfilePage authorName={viewingProfile} allTrips={allTrips} onClose={() => setViewingProfile(null)} onTripClick={setSelected} />}
       {showQueue     && <AdminQueueModal onClose={() => setShowQueue(false)} />}
       {showAdminLogin && <AdminLoginModal onSuccess={handleAdminLogin} onClose={() => setShowAdminLogin(false)} />}
       {editingTrip   && <AdminEditModal trip={editingTrip} onSave={handleSaveTrip} onClose={() => setEditingTrip(null)} />}
