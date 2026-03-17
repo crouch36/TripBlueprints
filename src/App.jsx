@@ -924,6 +924,155 @@ function AddTripModal({ onClose, onAdd }) {
   );
 }
 
+// ── Admin Config ──────────────────────────────────────────────────────────────
+// To add more admins, add their password to this array
+const ADMIN_PASSWORDS = ["Guinness"];
+
+// ── Admin Login Modal ─────────────────────────────────────────────────────────
+function AdminLoginModal({ onSuccess, onClose }) {
+  const [pw, setPw] = useState("");
+  const [error, setError] = useState(false);
+
+  const attempt = () => {
+    if (ADMIN_PASSWORDS.includes(pw)) { onSuccess(); }
+    else { setError(true); setTimeout(() => setError(false), 2000); setPw(""); }
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(44,62,80,0.75)", zIndex:4000, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(8px)" }}>
+      <div style={{ background:C.white, borderRadius:"20px", padding:"40px 36px", width:"100%", maxWidth:"400px", boxShadow:`0 32px 64px rgba(44,62,80,0.25)`, border:`1px solid ${C.tide}` }}>
+        <div style={{ textAlign:"center", marginBottom:"28px" }}>
+          <div style={{ fontSize:"36px", marginBottom:"12px" }}>🔐</div>
+          <div style={{ fontSize:"20px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif" }}>Admin Access</div>
+          <div style={{ fontSize:"12px", color:C.slateLight, marginTop:"4px" }}>TripBlueprints Admin Panel</div>
+        </div>
+        <input
+          type="password"
+          value={pw}
+          onChange={e => setPw(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && attempt()}
+          placeholder="Enter admin password"
+          style={{ width:"100%", padding:"11px 14px", borderRadius:"10px", border:`2px solid ${error?C.red:C.tide}`, fontSize:"14px", outline:"none", boxSizing:"border-box", marginBottom:"12px", background:error?C.redBg:C.white, color:C.slate, transition:"all .2s" }}
+          autoFocus
+        />
+        {error && <div style={{ fontSize:"12px", color:C.red, textAlign:"center", marginBottom:"10px", fontWeight:600 }}>Incorrect password — try again</div>}
+        <button onClick={attempt} style={{ width:"100%", padding:"11px", borderRadius:"10px", border:"none", background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, fontSize:"14px", fontWeight:700, cursor:"pointer", marginBottom:"10px" }}>
+          Enter Admin Panel
+        </button>
+        <button onClick={onClose} style={{ width:"100%", padding:"9px", borderRadius:"10px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"13px", fontWeight:600, cursor:"pointer" }}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Admin Edit Trip Modal ─────────────────────────────────────────────────────
+function AdminEditModal({ trip, onSave, onClose }) {
+  const [form, setForm] = useState(JSON.parse(JSON.stringify(trip)));
+
+  const updField = (f, v) => setForm(p => ({ ...p, [f]: v }));
+  const updRow   = (cat, i, f, v) => setForm(p => { const u = [...p[cat]]; u[i] = { ...u[i], [f]: v }; return { ...p, [cat]: u }; });
+  const addRow   = cat => setForm(p => ({ ...p, [cat]: [...p[cat], { item:"", detail:"", tip:"" }] }));
+  const delRow   = (cat, i) => setForm(p => ({ ...p, [cat]: p[cat].filter((_,idx) => idx !== i) }));
+  const updDay   = (di, f, v) => setForm(p => { const d=[...p.days]; d[di]={...d[di],[f]:v}; return {...p,days:d}; });
+  const updDayItem = (di, ii, f, v) => setForm(p => { const d=[...p.days]; const its=[...d[di].items]; its[ii]={...its[ii],[f]:v}; d[di]={...d[di],items:its}; return {...p,days:d}; });
+  const addDayItem = di => setForm(p => { const d=[...p.days]; d[di]={...d[di],items:[...d[di].items,{time:"",type:"activity",label:"",note:""}]}; return {...p,days:d}; });
+  const delDayItem = (di, ii) => setForm(p => { const d=[...p.days]; d[di]={...d[di],items:d[di].items.filter((_,idx)=>idx!==ii)}; return {...p,days:d}; });
+
+  const inp  = { width:"100%", padding:"7px 10px", borderRadius:"7px", border:`1px solid ${C.tide}`, fontSize:"12px", outline:"none", boxSizing:"border-box", fontFamily:"inherit", background:C.white, color:C.slate };
+  const lbl  = { fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" };
+  const sect = { fontSize:"13px", fontWeight:800, color:C.slate, borderBottom:`2px solid ${C.tide}`, paddingBottom:"6px", marginBottom:"14px", marginTop:"22px" };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(44,62,80,0.75)", zIndex:4000, display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"24px 16px", overflowY:"auto", backdropFilter:"blur(8px)" }}>
+      <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"780px", overflow:"hidden", boxShadow:`0 32px 64px rgba(44,62,80,0.25)`, border:`1px solid ${C.tide}` }}>
+
+        {/* header */}
+        <div style={{ background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, padding:"20px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <div style={{ fontSize:"11px", fontWeight:700, color:"rgba(255,255,255,0.7)", textTransform:"uppercase", letterSpacing:"0.1em" }}>Admin — Editing</div>
+            <div style={{ fontSize:"18px", fontWeight:800, color:C.white, fontFamily:"'Cormorant Garamond',serif", marginTop:"2px" }}>{form.title}</div>
+          </div>
+          <div style={{ display:"flex", gap:"8px" }}>
+            <button onClick={() => onSave(form)} style={{ padding:"8px 20px", borderRadius:"8px", border:"none", background:C.white, color:C.azureDark, fontSize:"12px", fontWeight:800, cursor:"pointer" }}>✓ Save Changes</button>
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,0.2)", border:"none", color:C.white, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>×</button>
+          </div>
+        </div>
+
+        <div style={{ padding:"24px 28px", overflowY:"auto", maxHeight:"76vh" }}>
+
+          {/* basics */}
+          <div style={sect}>Trip Overview</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"12px" }}>
+            <div><label style={lbl}>Title</label><input style={inp} value={form.title} onChange={e=>updField("title",e.target.value)} /></div>
+            <div><label style={lbl}>Destination</label><input style={inp} value={form.destination} onChange={e=>updField("destination",e.target.value)} /></div>
+            <div><label style={lbl}>Region</label><select style={inp} value={form.region} onChange={e=>updField("region",e.target.value)}>{REGIONS.filter(r=>r!=="All Regions").map(r=><option key={r}>{r}</option>)}</select></div>
+            <div><label style={lbl}>Duration</label><input style={inp} value={form.duration} onChange={e=>updField("duration",e.target.value)} /></div>
+            <div><label style={lbl}>Date</label><input style={inp} value={form.date} onChange={e=>updField("date",e.target.value)} /></div>
+            <div><label style={lbl}>Travelers</label><input style={inp} value={form.travelers} onChange={e=>updField("travelers",e.target.value)} /></div>
+            <div><label style={lbl}>Author</label><input style={inp} value={form.author} onChange={e=>updField("author",e.target.value)} /></div>
+          </div>
+          <div style={{ marginBottom:"12px" }}>
+            <label style={{...lbl,color:C.green}}>❤️ What They Loved</label>
+            <textarea style={{...inp,height:"80px",resize:"vertical"}} value={form.loves} onChange={e=>updField("loves",e.target.value)} />
+          </div>
+          <div>
+            <label style={{...lbl,color:C.amber}}>🔄 Do Differently</label>
+            <textarea style={{...inp,height:"80px",resize:"vertical"}} value={form.doNext} onChange={e=>updField("doNext",e.target.value)} />
+          </div>
+
+          {/* categories */}
+          {Object.entries(catConfig).map(([key,cfg]) => (
+            <div key={key}>
+              <div style={sect}>{cfg.label}</div>
+              {form[key]?.map((row,i) => (
+                <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr auto", gap:"6px", marginBottom:"7px", alignItems:"center" }}>
+                  <input style={inp} placeholder="Name" value={row.item} onChange={e=>updRow(key,i,"item",e.target.value)} />
+                  <input style={inp} placeholder="Details" value={row.detail} onChange={e=>updRow(key,i,"detail",e.target.value)} />
+                  <input style={inp} placeholder="Tip" value={row.tip} onChange={e=>updRow(key,i,"tip",e.target.value)} />
+                  <button onClick={()=>delRow(key,i)} style={{ padding:"6px 10px", borderRadius:"6px", border:`1px solid ${C.red}`, background:C.redBg, color:C.red, cursor:"pointer", fontSize:"13px", fontWeight:700, flexShrink:0 }}>✕</button>
+                </div>
+              ))}
+              <button onClick={()=>addRow(key)} style={{ fontSize:"11px", color:cfg.color, background:"none", border:`1px dashed ${cfg.color}`, padding:"3px 10px", borderRadius:"5px", cursor:"pointer", fontWeight:600 }}>+ Add row</button>
+            </div>
+          ))}
+
+          {/* daily itinerary */}
+          <div style={sect}>📅 Daily Itinerary</div>
+          {form.days?.map((day, di) => (
+            <div key={di} style={{ background:C.seafoam, borderRadius:"12px", padding:"14px 16px", marginBottom:"14px", border:`1px solid ${C.tide}` }}>
+              <div style={{ display:"grid", gridTemplateColumns:"auto 1fr 1fr", gap:"8px", marginBottom:"12px", alignItems:"center" }}>
+                <div style={{ fontSize:"12px", fontWeight:800, color:C.azure, minWidth:"40px" }}>Day {day.day}</div>
+                <input style={inp} placeholder="Date (e.g. Mar 12)" value={day.date} onChange={e=>updDay(di,"date",e.target.value)} />
+                <input style={inp} placeholder="Day title" value={day.title} onChange={e=>updDay(di,"title",e.target.value)} />
+              </div>
+              {day.items.map((item, ii) => (
+                <div key={ii} style={{ display:"grid", gridTemplateColumns:"80px 90px 1fr 1fr auto", gap:"5px", marginBottom:"6px", alignItems:"center" }}>
+                  <input style={{...inp,fontSize:"11px"}} placeholder="Time" value={item.time} onChange={e=>updDayItem(di,ii,"time",e.target.value)} />
+                  <select style={{...inp,fontSize:"11px"}} value={item.type} onChange={e=>updDayItem(di,ii,"type",e.target.value)}>
+                    {["hotel","restaurant","bar","activity","transport"].map(t=><option key={t}>{t}</option>)}
+                  </select>
+                  <input style={{...inp,fontSize:"11px"}} placeholder="Label" value={item.label} onChange={e=>updDayItem(di,ii,"label",e.target.value)} />
+                  <input style={{...inp,fontSize:"11px"}} placeholder="Note" value={item.note} onChange={e=>updDayItem(di,ii,"note",e.target.value)} />
+                  <button onClick={()=>delDayItem(di,ii)} style={{ padding:"5px 8px", borderRadius:"5px", border:`1px solid ${C.red}`, background:C.redBg, color:C.red, cursor:"pointer", fontSize:"11px" }}>✕</button>
+                </div>
+              ))}
+              <button onClick={()=>addDayItem(di)} style={{ fontSize:"11px", color:C.azureDeep, background:"none", border:`1px dashed ${C.azure}`, padding:"3px 10px", borderRadius:"5px", cursor:"pointer", fontWeight:600 }}>+ Add item</button>
+            </div>
+          ))}
+        </div>
+
+        {/* footer */}
+        <div style={{ padding:"16px 28px", borderTop:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"space-between" }}>
+          <button onClick={onClose} style={{ padding:"9px 20px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"12px", fontWeight:600, cursor:"pointer" }}>Cancel</button>
+          <button onClick={() => onSave(form)} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>✓ Save Changes</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -935,6 +1084,17 @@ export default function App() {
   const [region, setRegion] = useState("All Regions");
   const [tag, setTag] = useState("All");
 
+  // ── Admin state ──
+  const isAdminUrl = window.location.pathname === "/admin" || window.location.hash === "#admin";
+  const [showAdminLogin, setShowAdminLogin] = useState(isAdminUrl);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [editingTrip, setEditingTrip] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+
+  const handleAdminLogin = () => { setIsAdmin(true); setShowAdminLogin(false); };
+  const handleSaveTrip = (updated) => { setTrips(p => p.map(t => t.id === updated.id ? updated : t)); setEditingTrip(null); };
+  const handleDeleteTrip = (id) => { setTrips(p => p.filter(t => t.id !== id)); setConfirmDelete(null); };
+
   const filtered = useMemo(() => trips.filter(t =>
     (!search || [t.title,t.destination,t.travelers,t.loves].some(s=>s.toLowerCase().includes(search.toLowerCase()))) &&
     (region==="All Regions"||t.region===region) &&
@@ -945,6 +1105,16 @@ export default function App() {
     <div style={{ minHeight:"100vh", background:C.seafoam, fontFamily:"'Jost',system-ui,sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
+      {/* Admin banner */}
+      {isAdmin && (
+        <div style={{ background:`linear-gradient(90deg,${C.azureDark},${C.azure})`, padding:"8px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div style={{ fontSize:"12px", fontWeight:700, color:C.white, display:"flex", alignItems:"center", gap:"8px" }}>
+            <span>🔐</span> Admin Mode Active — you can edit, delete and add trips
+          </div>
+          <button onClick={() => setIsAdmin(false)} style={{ fontSize:"11px", fontWeight:700, color:C.white, background:"rgba(255,255,255,0.2)", border:"none", borderRadius:"6px", padding:"4px 12px", cursor:"pointer" }}>Exit Admin</button>
+        </div>
+      )}
+
       {/* Nav */}
       <nav style={{ background:C.white, borderBottom:`1px solid ${C.tide}`, padding:"0 24px", position:"sticky", top:0, zIndex:100, boxShadow:`0 1px 8px rgba(91,164,207,0.08)` }}>
         <div style={{ maxWidth:"1100px", margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between", height:"58px" }}>
@@ -954,15 +1124,15 @@ export default function App() {
             <span style={{ fontSize:"9px", background:C.seafoamDeep, color:C.azureDeep, fontWeight:700, padding:"2px 7px", borderRadius:"20px", border:`1px solid ${C.tide}` }}>beta</span>
           </div>
           <div style={{ display:"flex", gap:"7px" }}>
-            <button onClick={() => setShowImport(true)} style={{ background:C.seafoam, color:C.slateMid, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>🤖 Smart Import</button>
-            <button onClick={() => setShowAdd(true)} style={{ background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, border:"none", borderRadius:"8px", padding:"7px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 3px 12px ${C.azure}55` }}>+ Add Blueprint</button>
+            {isAdmin && <button onClick={() => setShowImport(true)} style={{ background:C.seafoam, color:C.slateMid, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>🤖 Smart Import</button>}
+            {isAdmin && <button onClick={() => setShowAdd(true)} style={{ background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, border:"none", borderRadius:"8px", padding:"7px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 3px 12px ${C.azure}55` }}>+ Add Blueprint</button>}
+            {!isAdmin && <button onClick={() => setShowAdminLogin(true)} style={{ background:C.seafoam, color:C.muted, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 12px", fontSize:"11px", fontWeight:600, cursor:"pointer", opacity:0.5 }}>🔐</button>}
           </div>
         </div>
       </nav>
 
-      {/* Hero — coastal gradient */}
+      {/* Hero */}
       <div style={{ background:`linear-gradient(160deg,${C.azureDark} 0%,${C.azure} 50%,#85C1E9 85%,${C.sand} 100%)`, padding:"56px 24px 52px", textAlign:"center", color:C.white, position:"relative", overflow:"hidden" }}>
-        {/* subtle wave texture via radial gradients */}
         <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse 80% 60% at 20% 80%, rgba(255,255,255,0.08) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 20%, rgba(255,255,255,0.06) 0%, transparent 50%)", pointerEvents:"none" }} />
         <div style={{ position:"relative" }}>
           <div style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.18em", textTransform:"uppercase", opacity:.75, marginBottom:"12px" }}>The Traveler's Playbook</div>
@@ -992,7 +1162,18 @@ export default function App() {
           <strong style={{ color:C.slate }}>{filtered.length}</strong> blueprint{filtered.length!==1?"s":""}{search&&<> for "<strong style={{ color:C.slate }}>{search}</strong>"</>}
         </div>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(310px,1fr))", gap:"18px" }}>
-          {filtered.map(trip=><TripCard key={trip.id} trip={trip} onClick={setSelected} />)}
+          {filtered.map(trip => (
+            <div key={trip.id} style={{ position:"relative" }}>
+              <TripCard trip={trip} onClick={setSelected} />
+              {/* Admin controls overlay */}
+              {isAdmin && (
+                <div style={{ position:"absolute", top:"12px", right:"12px", display:"flex", gap:"6px", zIndex:10 }}>
+                  <button onClick={e => { e.stopPropagation(); setEditingTrip(trip); }} style={{ padding:"5px 12px", borderRadius:"7px", border:"none", background:C.azure, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer", boxShadow:"0 2px 8px rgba(44,62,80,0.2)" }}>✏️ Edit</button>
+                  <button onClick={e => { e.stopPropagation(); setConfirmDelete(trip); }} style={{ padding:"5px 12px", borderRadius:"7px", border:"none", background:C.red, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer", boxShadow:"0 2px 8px rgba(44,62,80,0.2)" }}>🗑️ Delete</button>
+                </div>
+              )}
+            </div>
+          ))}
           {filtered.length===0 && (
             <div style={{ gridColumn:"1/-1", textAlign:"center", padding:"56px 20px", color:C.muted }}>
               <div style={{ fontSize:"38px", marginBottom:"12px" }}>✈️</div>
@@ -1002,9 +1183,26 @@ export default function App() {
         </div>
       </main>
 
-      {selected   && <TripModal trip={selected} onClose={() => setSelected(null)} />}
-      {showAdd    && <AddTripModal onClose={() => setShowAdd(false)} onAdd={t => setTrips(p=>[t,...p])} />}
-      {showImport && <SmartImportHub onClose={() => setShowImport(false)} />}
+      {/* Delete confirmation */}
+      {confirmDelete && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(44,62,80,0.75)", zIndex:4000, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(8px)" }}>
+          <div style={{ background:C.white, borderRadius:"16px", padding:"32px", maxWidth:"400px", width:"90%", textAlign:"center", boxShadow:`0 32px 64px rgba(44,62,80,0.25)` }}>
+            <div style={{ fontSize:"32px", marginBottom:"12px" }}>🗑️</div>
+            <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, marginBottom:"8px" }}>Delete this blueprint?</div>
+            <div style={{ fontSize:"13px", color:C.slateLight, marginBottom:"24px" }}>"{confirmDelete.title}" will be permanently removed.</div>
+            <div style={{ display:"flex", gap:"10px" }}>
+              <button onClick={() => setConfirmDelete(null)} style={{ flex:1, padding:"10px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontWeight:600, cursor:"pointer" }}>Cancel</button>
+              <button onClick={() => handleDeleteTrip(confirmDelete.id)} style={{ flex:1, padding:"10px", borderRadius:"8px", border:"none", background:C.red, color:C.white, fontWeight:700, cursor:"pointer" }}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selected      && <TripModal trip={selected} onClose={() => setSelected(null)} />}
+      {showAdd       && <AddTripModal onClose={() => setShowAdd(false)} onAdd={t => setTrips(p=>[t,...p])} />}
+      {showImport    && <SmartImportHub onClose={() => setShowImport(false)} />}
+      {showAdminLogin && <AdminLoginModal onSuccess={handleAdminLogin} onClose={() => setShowAdminLogin(false)} />}
+      {editingTrip   && <AdminEditModal trip={editingTrip} onSave={handleSaveTrip} onClose={() => setEditingTrip(null)} />}
     </div>
   );
 }
