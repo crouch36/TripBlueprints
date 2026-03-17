@@ -1,4 +1,27 @@
-import { useState, useMemo, useRef, useCallback } from "react";
+import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+
+// ── Supabase client ───────────────────────────────────────────────────────────
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
+
+// ── Content Filter ────────────────────────────────────────────────────────────
+const PROFANITY = ["spam","scam","xxx","porn","casino","viagra"];
+function runContentFilter(trip) {
+  const text = JSON.stringify(trip).toLowerCase();
+  const flags = [];
+  PROFANITY.forEach(w => { if (text.includes(w)) flags.push('Contains flagged word: ' + w); });
+  if ((text.match(/http/g)||[]).length > 2) flags.push("Multiple URLs detected");
+  if (!trip.title || trip.title.length < 5) flags.push("Trip title too short");
+  if (!trip.loves || trip.loves.length < 20) flags.push("What you loved section too brief");
+  if (text.length < 200) flags.push("Submission content too thin");
+  const lv = (trip.loves||"").replace(/[^A-Za-z]/g,"");
+  const capsRatio = lv.split("").filter(c=>c===c.toUpperCase()&&c!==c.toLowerCase()).length / Math.max(lv.length,1);
+  if (capsRatio > 0.6 && lv.length > 20) flags.push("Excessive capitals detected");
+  return { passed: flags.length === 0, flags };
+}
 
 // ── Serene Coastal Design Tokens ─────────────────────────────────────────────
 // Primary:   Sky Azure   #5BA4CF  /  #3D8EB9  (deeper)
@@ -924,6 +947,367 @@ function AddTripModal({ onClose, onAdd }) {
   );
 }
 
+
+// ── AI Prompt Generator ───────────────────────────────────────────────────────
+const AI_SUBMISSION_PROMPT = `You are helping me document a trip I took so I can share it on TripBlueprints.
+
+Please ask me questions about my trip and help me fill in the following details. Ask conversationally, one section at a time. When done, output a clean structured summary under these exact headings:
+
+TRIP OVERVIEW
+- Title:
+- Destination:
+- Region: (Asia / Europe / North America / Central America / South America / Africa / Oceania)
+- Date: (Month Year)
+- Duration:
+- Who traveled:
+- Tags: (choose from: family-friendly, romantic, adventure, food & wine, culture, beach, wildlife, scenic drives)
+
+WHAT I LOVED:
+(3-5 sentences about highlights)
+
+WHAT I WOULD DO DIFFERENTLY:
+(2-3 sentences of honest advice)
+
+FLIGHTS:
+- Airline and route:
+- Approximate cost per person:
+- Tip:
+
+HOTELS:
+For each place:
+- Name:
+- Nights and cost:
+- Tip:
+
+RESTAURANTS:
+For each notable meal:
+- Name and location:
+- Cost:
+- Tip:
+
+BARS:
+- Name:
+- Cost:
+- Tip:
+
+ACTIVITIES:
+- Name:
+- Cost:
+- Tip:
+
+DAILY ITINERARY:
+Day N - Title - Date
+  Time - type - what you did - note
+
+Start by asking: Where did you go and when?`;
+
+// ── Submit Trip Modal ─────────────────────────────────────────────────────────
+function SubmitTripModal({ onClose }) {
+  const [step, setStep] = useState("prompt");
+  const [pastedText, setPastedText] = useState("");
+  const [filterResult, setFilterResult] = useState(null);
+  const [submitterName, setSubmitterName] = useState("");
+  const [submitterEmail, setSubmitterEmail] = useState("");
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [form, setForm] = useState({
+    title:"", destination:"", region:"Europe", duration:"", travelers:"", date:"", tags:[], loves:"", doNext:"",
+    airfare:[{item:"",detail:"",tip:""}], hotels:[{item:"",detail:"",tip:""}],
+    restaurants:[{item:"",detail:"",tip:""}], bars:[{item:"",detail:"",tip:""}],
+    activities:[{item:"",detail:"",tip:""}], days:[]
+  });
+
+  const inp = { width:"100%", padding:"8px 11px", borderRadius:"7px", border:`1px solid ${C.tide}`, fontSize:"12px", outline:"none", boxSizing:"border-box", fontFamily:"inherit", background:C.white, color:C.slate };
+  const lbl = { fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" };
+
+  const copyPrompt = () => {
+    navigator.clipboard.writeText(AI_SUBMISSION_PROMPT);
+    setCopiedPrompt(true); setTimeout(() => setCopiedPrompt(false), 2500);
+  };
+
+  const parseAIOutput = () => {
+    const text = pastedText;
+    const get = (label) => { const re = new RegExp(label + "[:\s]+([^\n]+)", "i"); const m = text.match(re); return m ? m[1].trim() : ""; };
+    const getBlock = (label, next) => { const re = new RegExp(label + "[:\s\n]+([\s\S]*?)(?=" + next + "|$)", "i"); const m = text.match(re); return m ? m[1].trim() : ""; };
+    setForm(p => ({
+      ...p,
+      title: get("Title") || p.title,
+      destination: get("Destination") || p.destination,
+      region: get("Region") || p.region,
+      date: get("Date") || p.date,
+      duration: get("Duration") || p.duration,
+      travelers: get("Who traveled") || p.travelers,
+      loves: getBlock("WHAT I LOVED", "WHAT I WOULD") || p.loves,
+      doNext: getBlock("WHAT I WOULD DO DIFFERENTLY", "FLIGHTS") || p.doNext,
+    }));
+    setStep("form");
+  };
+
+  const updRow = (cat,i,f,v) => setForm(p => { const u=[...p[cat]]; u[i]={...u[i],[f]:v}; return {...p,[cat]:u}; });
+  const addRow = cat => setForm(p => ({...p,[cat]:[...p[cat],{item:"",detail:"",tip:""}]}));
+  const delRow = (cat,i) => setForm(p => ({...p,[cat]:p[cat].filter((_,idx)=>idx!==i)}));
+  const toggleTag = tag => setForm(p => ({...p,tags:p.tags.includes(tag)?p.tags.filter(t=>t!==tag):[...p.tags,tag]}));
+
+  const handleSubmit = async () => {
+    if (!submitterName || !submitterEmail) { alert("Please add your name and email."); return; }
+    setStep("submitting");
+    const result = runContentFilter({ ...form });
+    setFilterResult(result);
+    if (result.passed) {
+      await supabase.from("trips").insert([{
+        title: form.title, destination: form.destination, region: form.region,
+        author_name: submitterName, author_email: submitterEmail,
+        date: form.date, duration: form.duration, travelers: form.travelers,
+        tags: form.tags, loves: form.loves, do_next: form.doNext,
+        airfare: form.airfare, hotels: form.hotels, restaurants: form.restaurants,
+        bars: form.bars, activities: form.activities, days: form.days, status: "published"
+      }]);
+      setStep("done");
+    } else {
+      await supabase.from("submissions").insert([{
+        trip_data: { ...form }, submitter_name: submitterName, submitter_email: submitterEmail,
+        status: "flagged", ai_flagged: true, ai_flag_reason: result.flags.join("; ")
+      }]);
+      setStep("flagged");
+    }
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(44,62,80,0.75)", zIndex:2000, display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"28px 16px", overflowY:"auto", backdropFilter:"blur(8px)" }}>
+      <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"720px", overflow:"hidden", boxShadow:`0 32px 64px rgba(44,62,80,0.22)`, border:`1px solid ${C.tide}` }}>
+        <div style={{ padding:"20px 28px", borderBottom:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif" }}>Submit a Blueprint</div>
+            <div style={{ fontSize:"11px", color:C.slateLight, marginTop:"2px" }}>Share your trip with the TripBlueprints community</div>
+          </div>
+          <button onClick={onClose} style={{ background:C.seafoamDeep, border:"none", color:C.slateLight, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>x</button>
+        </div>
+
+        {step === "prompt" && (
+          <div style={{ padding:"28px" }}>
+            <div style={{ textAlign:"center", marginBottom:"24px" }}>
+              <div style={{ fontSize:"32px", marginBottom:"10px" }}>✈️</div>
+              <div style={{ fontSize:"16px", fontWeight:700, color:C.slate, marginBottom:"6px" }}>How would you like to build your blueprint?</div>
+              <div style={{ fontSize:"13px", color:C.slateLight, lineHeight:1.6 }}>Use our AI prompt for the fastest experience, or fill the form directly.</div>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px" }}>
+              <button onClick={() => setStep("ai-prompt")} style={{ padding:"18px", borderRadius:"12px", border:`2px solid ${C.azure}`, background:C.seafoam, cursor:"pointer", textAlign:"left" }}>
+                <div style={{ fontSize:"22px", marginBottom:"8px" }}>🤖</div>
+                <div style={{ fontSize:"13px", fontWeight:700, color:C.slate }}>Use AI Prompt</div>
+                <div style={{ fontSize:"11px", color:C.slateLight, marginTop:"3px", lineHeight:1.5 }}>Paste into Claude or ChatGPT, answer questions, paste back. Fastest way to build.</div>
+              </button>
+              <button onClick={() => setStep("form")} style={{ padding:"18px", borderRadius:"12px", border:`1px solid ${C.tide}`, background:C.white, cursor:"pointer", textAlign:"left" }}>
+                <div style={{ fontSize:"22px", marginBottom:"8px" }}>✏️</div>
+                <div style={{ fontSize:"13px", fontWeight:700, color:C.slate }}>Fill Form Manually</div>
+                <div style={{ fontSize:"11px", color:C.slateLight, marginTop:"3px", lineHeight:1.5 }}>Enter your trip details directly into the form fields.</div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === "ai-prompt" && (
+          <div style={{ padding:"24px 28px" }}>
+            <div style={{ fontSize:"13px", color:C.slateLight, marginBottom:"14px", lineHeight:1.6 }}>Copy this prompt and paste it into Claude, ChatGPT, or any AI. Answer its questions about your trip. When done, copy the full output and paste it below.</div>
+            <pre style={{ background:C.seafoam, border:`1px solid ${C.tide}`, borderRadius:"10px", padding:"14px", fontSize:"10.5px", lineHeight:1.7, color:C.slateMid, whiteSpace:"pre-wrap", wordBreak:"break-word", maxHeight:"200px", overflowY:"auto", fontFamily:"monospace", marginBottom:"14px" }}>
+              {AI_SUBMISSION_PROMPT}
+            </pre>
+            <button onClick={copyPrompt} style={{ width:"100%", padding:"10px", borderRadius:"8px", border:"none", background:copiedPrompt?C.green:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, fontWeight:700, fontSize:"13px", cursor:"pointer", marginBottom:"16px", transition:"background .2s" }}>
+              {copiedPrompt ? "Copied!" : "Copy Prompt"}
+            </button>
+            <div style={{ fontSize:"12px", fontWeight:600, color:C.slate, marginBottom:"6px" }}>Paste your AI output here:</div>
+            <textarea value={pastedText} onChange={e=>setPastedText(e.target.value)} placeholder="Paste the full output from your AI session here..." style={{ width:"100%", height:"130px", padding:"10px 12px", borderRadius:"8px", border:`1px solid ${C.tide}`, fontSize:"12px", outline:"none", boxSizing:"border-box", resize:"vertical", fontFamily:"inherit", color:C.slate }} />
+            <div style={{ display:"flex", gap:"10px", marginTop:"12px" }}>
+              <button onClick={() => setStep("prompt")} style={{ padding:"9px 18px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"12px", fontWeight:600, cursor:"pointer" }}>Back</button>
+              <button onClick={parseAIOutput} disabled={pastedText.length < 50} style={{ flex:1, padding:"9px", borderRadius:"8px", border:"none", background:pastedText.length<50?C.tide:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, fontWeight:700, fontSize:"13px", cursor:pastedText.length<50?"not-allowed":"pointer" }}>
+                Auto-populate form
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === "form" && (
+          <div style={{ padding:"20px 28px", maxHeight:"65vh", overflowY:"auto" }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"14px" }}>
+              <div style={{ gridColumn:"1/-1" }}><label style={lbl}>Trip Title</label><input style={inp} value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} /></div>
+              <div><label style={lbl}>Destination</label><input style={inp} value={form.destination} onChange={e=>setForm(p=>({...p,destination:e.target.value}))} /></div>
+              <div><label style={lbl}>Region</label><select style={inp} value={form.region} onChange={e=>setForm(p=>({...p,region:e.target.value}))}>{REGIONS.filter(r=>r!=="All Regions").map(r=><option key={r}>{r}</option>)}</select></div>
+              <div><label style={lbl}>Duration</label><input style={inp} value={form.duration} onChange={e=>setForm(p=>({...p,duration:e.target.value}))} /></div>
+              <div><label style={lbl}>Date</label><input style={inp} value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))} /></div>
+              <div style={{ gridColumn:"1/-1" }}><label style={lbl}>Who Traveled</label><input style={inp} value={form.travelers} onChange={e=>setForm(p=>({...p,travelers:e.target.value}))} /></div>
+              <div style={{ gridColumn:"1/-1" }}>
+                <label style={lbl}>Tags</label>
+                <div style={{ display:"flex", flexWrap:"wrap", gap:"5px", marginTop:"3px" }}>
+                  {TAGS.filter(t=>t!=="All").map(tag=><button key={tag} onClick={()=>toggleTag(tag)} style={{ padding:"3px 10px", borderRadius:"20px", fontSize:"11px", fontWeight:600, cursor:"pointer", border:`1px solid ${form.tags.includes(tag)?C.azure:C.tide}`, background:form.tags.includes(tag)?C.azure:C.white, color:form.tags.includes(tag)?C.white:C.slateLight }}>{tag}</button>)}
+                </div>
+              </div>
+              <div style={{ gridColumn:"1/-1" }}><label style={{...lbl,color:C.green}}>What did you love?</label><textarea style={{...inp,height:"80px",resize:"vertical"}} value={form.loves} onChange={e=>setForm(p=>({...p,loves:e.target.value}))} /></div>
+              <div style={{ gridColumn:"1/-1" }}><label style={{...lbl,color:C.amber}}>What would you do differently?</label><textarea style={{...inp,height:"80px",resize:"vertical"}} value={form.doNext} onChange={e=>setForm(p=>({...p,doNext:e.target.value}))} /></div>
+            </div>
+            {Object.entries(catConfig).map(([key,cfg]) => (
+              <div key={key} style={{ marginBottom:"14px" }}>
+                <div style={{ fontSize:"12px", fontWeight:700, color:cfg.color, marginBottom:"6px" }}>{cfg.label}</div>
+                {form[key].map((row,i) => (
+                  <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr auto", gap:"5px", marginBottom:"5px" }}>
+                    <input style={inp} placeholder="Name" value={row.item} onChange={e=>updRow(key,i,"item",e.target.value)} />
+                    <input style={inp} placeholder="Details" value={row.detail} onChange={e=>updRow(key,i,"detail",e.target.value)} />
+                    <input style={inp} placeholder="Tip" value={row.tip} onChange={e=>updRow(key,i,"tip",e.target.value)} />
+                    <button onClick={()=>delRow(key,i)} style={{ padding:"5px 8px", borderRadius:"5px", border:`1px solid ${C.red}`, background:C.redBg, color:C.red, cursor:"pointer" }}>x</button>
+                  </div>
+                ))}
+                <button onClick={()=>addRow(key)} style={{ fontSize:"11px", color:cfg.color, background:"none", border:`1px dashed ${cfg.color}`, padding:"3px 10px", borderRadius:"5px", cursor:"pointer", fontWeight:600 }}>+ Add</button>
+              </div>
+            ))}
+            <div style={{ borderTop:`1px solid ${C.tide}`, paddingTop:"14px", marginTop:"6px" }}>
+              <div style={{ fontSize:"12px", fontWeight:700, color:C.slate, marginBottom:"10px" }}>Your details</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+                <div><label style={lbl}>Your Name</label><input style={inp} value={submitterName} onChange={e=>setSubmitterName(e.target.value)} /></div>
+                <div><label style={lbl}>Your Email</label><input style={inp} value={submitterEmail} onChange={e=>setSubmitterEmail(e.target.value)} /></div>
+              </div>
+              <div style={{ fontSize:"10px", color:C.muted, marginTop:"5px" }}>Email never displayed publicly.</div>
+            </div>
+          </div>
+        )}
+
+        {step === "submitting" && (
+          <div style={{ padding:"60px 28px", textAlign:"center" }}>
+            <div style={{ fontSize:"36px", marginBottom:"14px" }}>🔍</div>
+            <div style={{ fontSize:"16px", fontWeight:700, color:C.slate }}>Reviewing submission…</div>
+            <div style={{ fontSize:"12px", color:C.slateLight, marginTop:"6px" }}>Running content checks.</div>
+          </div>
+        )}
+
+        {step === "done" && (
+          <div style={{ padding:"60px 28px", textAlign:"center" }}>
+            <div style={{ fontSize:"48px", marginBottom:"14px" }}>🎉</div>
+            <div style={{ fontSize:"20px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif", marginBottom:"8px" }}>Blueprint Published!</div>
+            <div style={{ fontSize:"13px", color:C.slateLight, maxWidth:"380px", margin:"0 auto 24px", lineHeight:1.6 }}>Your trip passed all checks and is now live on TripBlueprints.</div>
+            <button onClick={onClose} style={{ padding:"11px 28px", borderRadius:"10px", border:"none", background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, fontWeight:700, fontSize:"13px", cursor:"pointer" }}>View the site</button>
+          </div>
+        )}
+
+        {step === "flagged" && (
+          <div style={{ padding:"50px 28px", textAlign:"center" }}>
+            <div style={{ fontSize:"40px", marginBottom:"14px" }}>📋</div>
+            <div style={{ fontSize:"18px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif", marginBottom:"8px" }}>Submission Received</div>
+            <div style={{ fontSize:"13px", color:C.slateLight, maxWidth:"380px", margin:"0 auto 16px", lineHeight:1.6 }}>Your trip is under review. We will be in touch at <strong>{submitterEmail}</strong>.</div>
+            {filterResult?.flags?.length > 0 && (
+              <div style={{ background:C.amberBg, border:`1px solid ${C.amber}`, borderRadius:"10px", padding:"12px 16px", maxWidth:"380px", margin:"0 auto 20px", textAlign:"left" }}>
+                <div style={{ fontSize:"11px", fontWeight:700, color:C.amber, marginBottom:"5px" }}>Items flagged for review:</div>
+                {filterResult.flags.map((f,i) => <div key={i} style={{ fontSize:"11px", color:C.slateMid }}>- {f}</div>)}
+              </div>
+            )}
+            <button onClick={onClose} style={{ padding:"11px 28px", borderRadius:"10px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontWeight:600, fontSize:"13px", cursor:"pointer" }}>Close</button>
+          </div>
+        )}
+
+        {step === "form" && (
+          <div style={{ padding:"14px 28px", borderTop:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"space-between" }}>
+            <button onClick={() => setStep("prompt")} style={{ padding:"9px 18px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"12px", fontWeight:600, cursor:"pointer" }}>Back</button>
+            <button onClick={handleSubmit} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>Submit Blueprint</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Admin Queue Modal ─────────────────────────────────────────────────────────
+function AdminQueueModal({ onClose }) {
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [detail, setDetail] = useState(null);
+
+  useEffect(() => {
+    supabase.from("submissions").select("*").order("submitted_at", { ascending: false })
+      .then(({ data }) => { setSubmissions(data || []); setLoading(false); });
+  }, []);
+
+  const approve = async (sub) => {
+    const t = sub.trip_data;
+    await supabase.from("trips").insert([{
+      title:t.title, destination:t.destination, region:t.region,
+      author_name:sub.submitter_name, author_email:sub.submitter_email,
+      date:t.date, duration:t.duration, travelers:t.travelers,
+      tags:t.tags||[], loves:t.loves, do_next:t.doNext,
+      airfare:t.airfare||[], hotels:t.hotels||[], restaurants:t.restaurants||[],
+      bars:t.bars||[], activities:t.activities||[], days:t.days||[], status:"published"
+    }]);
+    await supabase.from("submissions").update({ status:"approved", reviewed_at:new Date().toISOString() }).eq("id",sub.id);
+    setSubmissions(p => p.map(s => s.id===sub.id ? {...s,status:"approved"} : s));
+    setDetail(null);
+  };
+
+  const reject = async (sub) => {
+    await supabase.from("submissions").update({ status:"rejected", reviewed_at:new Date().toISOString() }).eq("id",sub.id);
+    setSubmissions(p => p.map(s => s.id===sub.id ? {...s,status:"rejected"} : s));
+    setDetail(null);
+  };
+
+  const statusCol = { pending:C.amber, flagged:C.red, approved:C.green, rejected:C.muted };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(44,62,80,0.75)", zIndex:4000, display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"28px 16px", overflowY:"auto", backdropFilter:"blur(8px)" }}>
+      <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"800px", overflow:"hidden", boxShadow:`0 32px 64px rgba(44,62,80,0.22)`, border:`1px solid ${C.tide}` }}>
+        <div style={{ padding:"20px 28px", borderBottom:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif" }}>Submission Queue</div>
+            <div style={{ fontSize:"11px", color:C.slateLight, marginTop:"2px" }}>{submissions.filter(s=>s.status==="flagged"||s.status==="pending").length} awaiting review</div>
+          </div>
+          <button onClick={onClose} style={{ background:C.seafoamDeep, border:"none", color:C.slateLight, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>x</button>
+        </div>
+        <div style={{ padding:"16px 22px", maxHeight:"70vh", overflowY:"auto" }}>
+          {loading && <div style={{ textAlign:"center", padding:"40px", color:C.muted }}>Loading…</div>}
+          {!loading && submissions.length === 0 && (
+            <div style={{ textAlign:"center", padding:"40px", color:C.muted }}>
+              <div style={{ fontSize:"32px", marginBottom:"10px" }}>📭</div>
+              <div>No submissions yet</div>
+            </div>
+          )}
+          {submissions.map(sub => (
+            <div key={sub.id} style={{ background:C.white, border:`1px solid ${sub.status==="flagged"?C.red:C.tide}`, borderRadius:"12px", padding:"14px 16px", marginBottom:"10px" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"6px" }}>
+                <div>
+                  <div style={{ fontSize:"14px", fontWeight:700, color:C.slate }}>{sub.trip_data?.title||"Untitled"}</div>
+                  <div style={{ fontSize:"11px", color:C.slateLight }}>{sub.trip_data?.destination} - {sub.submitter_name} - {sub.submitter_email}</div>
+                  <div style={{ fontSize:"10px", color:C.muted }}>{new Date(sub.submitted_at).toLocaleDateString()}</div>
+                </div>
+                <span style={{ fontSize:"10px", fontWeight:700, padding:"3px 10px", borderRadius:"20px", background:(statusCol[sub.status]||C.muted)+"22", color:statusCol[sub.status]||C.muted, textTransform:"uppercase", flexShrink:0 }}>{sub.status}</span>
+              </div>
+              {sub.ai_flag_reason && (
+                <div style={{ background:C.amberBg, borderRadius:"6px", padding:"7px 10px", marginBottom:"8px", fontSize:"11px", color:C.slateMid }}>
+                  Flagged: {sub.ai_flag_reason}
+                </div>
+              )}
+              {(sub.status==="flagged"||sub.status==="pending") && (
+                <div style={{ display:"flex", gap:"7px" }}>
+                  <button onClick={() => setDetail(sub)} style={{ padding:"6px 12px", borderRadius:"7px", border:`1px solid ${C.tide}`, background:C.seafoam, color:C.slateMid, fontSize:"11px", fontWeight:600, cursor:"pointer" }}>View</button>
+                  <button onClick={() => approve(sub)} style={{ padding:"6px 12px", borderRadius:"7px", border:"none", background:C.green, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>Approve</button>
+                  <button onClick={() => reject(sub)} style={{ padding:"6px 12px", borderRadius:"7px", border:"none", background:C.red, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>Reject</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      {detail && (
+        <div style={{ position:"fixed", inset:0, zIndex:5000, background:"rgba(44,62,80,0.85)", display:"flex", alignItems:"center", justifyContent:"center" }} onClick={() => setDetail(null)}>
+          <div style={{ background:C.white, borderRadius:"16px", padding:"24px", maxWidth:"540px", width:"92%", maxHeight:"80vh", overflowY:"auto" }} onClick={e=>e.stopPropagation()}>
+            <div style={{ fontSize:"16px", fontWeight:800, color:C.slate, marginBottom:"4px" }}>{detail.trip_data?.title}</div>
+            <div style={{ fontSize:"11px", color:C.slateLight, marginBottom:"14px" }}>by {detail.submitter_name} - {detail.submitter_email}</div>
+            <pre style={{ fontSize:"11px", color:C.slateMid, whiteSpace:"pre-wrap", wordBreak:"break-word", background:C.seafoam, padding:"12px", borderRadius:"8px", marginBottom:"16px" }}>
+              {JSON.stringify(detail.trip_data, null, 2)}
+            </pre>
+            <div style={{ display:"flex", gap:"8px" }}>
+              <button onClick={() => approve(detail)} style={{ flex:1, padding:"10px", borderRadius:"8px", border:"none", background:C.green, color:C.white, fontWeight:700, cursor:"pointer" }}>Approve</button>
+              <button onClick={() => reject(detail)} style={{ flex:1, padding:"10px", borderRadius:"8px", border:"none", background:C.red, color:C.white, fontWeight:700, cursor:"pointer" }}>Reject</button>
+              <button onClick={() => setDetail(null)} style={{ padding:"10px 14px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, cursor:"pointer" }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Admin Config ──────────────────────────────────────────────────────────────
 // To add more admins, add their password to this array
 const ADMIN_PASSWORDS = ["Guinness"];
@@ -1077,14 +1461,36 @@ function AdminEditModal({ trip, onSave, onClose }) {
 
 export default function App() {
   const [trips, setTrips] = useState(SAMPLE_TRIPS);
+  const [dbTrips, setDbTrips] = useState([]);
   const [selected, setSelected] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showSubmit, setShowSubmit] = useState(false);
+  const [showQueue, setShowQueue] = useState(false);
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState("All Regions");
   const [tag, setTag] = useState("All");
 
-  // ── Admin state ──
+  // Load from Supabase on mount
+  useEffect(() => {
+    supabase.from("trips").select("*").eq("status","published").order("created_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (!error && data?.length > 0) {
+          const mapped = data.map(t => ({
+            id:t.id, title:t.title, destination:t.destination, region:t.region,
+            author:t.author_name, date:t.date, duration:t.duration, travelers:t.travelers,
+            tags:t.tags||[], loves:t.loves, doNext:t.do_next,
+            airfare:t.airfare||[], hotels:t.hotels||[], restaurants:t.restaurants||[],
+            bars:t.bars||[], activities:t.activities||[], days:t.days||[]
+          }));
+          setDbTrips(mapped);
+        }
+      });
+  }, []);
+
+  const allTrips = [...dbTrips, ...trips];
+
+  // Admin state
   const isAdminUrl = window.location.pathname === "/admin" || window.location.hash === "#admin";
   const [showAdminLogin, setShowAdminLogin] = useState(isAdminUrl);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -1095,7 +1501,7 @@ export default function App() {
   const handleSaveTrip = (updated) => { setTrips(p => p.map(t => t.id === updated.id ? updated : t)); setEditingTrip(null); };
   const handleDeleteTrip = (id) => { setTrips(p => p.filter(t => t.id !== id)); setConfirmDelete(null); };
 
-  const filtered = useMemo(() => trips.filter(t =>
+  const filtered = useMemo(() => allTrips.filter(t =>
     (!search || [t.title,t.destination,t.travelers,t.loves].some(s=>s.toLowerCase().includes(search.toLowerCase()))) &&
     (region==="All Regions"||t.region===region) &&
     (tag==="All"||t.tags.includes(tag))
@@ -1124,9 +1530,11 @@ export default function App() {
             <span style={{ fontSize:"9px", background:C.seafoamDeep, color:C.azureDeep, fontWeight:700, padding:"2px 7px", borderRadius:"20px", border:`1px solid ${C.tide}` }}>beta</span>
           </div>
           <div style={{ display:"flex", gap:"7px" }}>
+            {!isAdmin && <button onClick={() => setShowSubmit(true)} style={{ background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, border:"none", borderRadius:"8px", padding:"7px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 3px 12px ${C.azure}55` }}>+ Submit a Trip</button>}
+            {isAdmin && <button onClick={() => setShowQueue(true)} style={{ background:C.amberBg, color:C.amber, border:`1px solid ${C.amber}44`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>📋 Queue</button>}
             {isAdmin && <button onClick={() => setShowImport(true)} style={{ background:C.seafoam, color:C.slateMid, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>🤖 Smart Import</button>}
             {isAdmin && <button onClick={() => setShowAdd(true)} style={{ background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, border:"none", borderRadius:"8px", padding:"7px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 3px 12px ${C.azure}55` }}>+ Add Blueprint</button>}
-            {!isAdmin && <button onClick={() => setShowAdminLogin(true)} style={{ background:C.seafoam, color:C.muted, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 12px", fontSize:"11px", fontWeight:600, cursor:"pointer", opacity:0.5 }}>🔐</button>}
+            {!isAdmin && <button onClick={() => setShowAdminLogin(true)} style={{ background:C.seafoam, color:C.muted, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 12px", fontSize:"11px", fontWeight:600, cursor:"pointer", opacity:0.4 }}>🔐</button>}
           </div>
         </div>
       </nav>
@@ -1201,6 +1609,8 @@ export default function App() {
       {selected      && <TripModal trip={selected} onClose={() => setSelected(null)} />}
       {showAdd       && <AddTripModal onClose={() => setShowAdd(false)} onAdd={t => setTrips(p=>[t,...p])} />}
       {showImport    && <SmartImportHub onClose={() => setShowImport(false)} />}
+      {showSubmit    && <SubmitTripModal onClose={() => setShowSubmit(false)} />}
+      {showQueue     && <AdminQueueModal onClose={() => setShowQueue(false)} />}
       {showAdminLogin && <AdminLoginModal onSuccess={handleAdminLogin} onClose={() => setShowAdminLogin(false)} />}
       {editingTrip   && <AdminEditModal trip={editingTrip} onSave={handleSaveTrip} onClose={() => setEditingTrip(null)} />}
     </div>
