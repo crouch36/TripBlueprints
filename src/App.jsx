@@ -1732,9 +1732,8 @@ export default function App() {
       {/* Nav */}
       <nav style={{ background:C.white, borderBottom:`1px solid ${C.tide}`, padding:"0 24px", position:"sticky", top:0, zIndex:100, boxShadow:`0 1px 6px rgba(28,43,58,0.06)` }}>
         <div style={{ maxWidth:"1100px", margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between", height:"58px" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-            <span style={{ fontSize:"19px" }}>🧭</span>
-            <span style={{ fontFamily:"'Playfair Display',Georgia,serif", fontWeight:700, fontSize:"22px", color:C.slate, letterSpacing:"0.01em" }}>TripCopycat</span>
+          <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+            <img src="/copycat.png" alt="TripCopycat" style={{ height:"52px", width:"52px", objectFit:"contain", objectPosition:"top" }} />
             <span style={{ fontSize:"9px", background:C.seafoamDeep, color:C.azureDeep, fontWeight:700, padding:"2px 7px", borderRadius:"20px", border:`1px solid ${C.tide}` }}>beta</span>
           </div>
           <div style={{ display:"flex", gap:"7px" }}>
@@ -1762,9 +1761,8 @@ export default function App() {
         {/* subtle texture overlay */}
         <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle at 20% 50%, rgba(196,168,130,0.08) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(193,105,42,0.06) 0%, transparent 50%)", pointerEvents:"none" }} />
         <div style={{ position:"relative", maxWidth:"780px", margin:"0 auto" }}>
-          <div style={{ display:"inline-flex", alignItems:"center", gap:"10px", background:C.sandDeep, borderRadius:"30px", padding:"6px 20px 6px 6px", marginBottom:"24px" }}>
-            <img src="/copycat.png" alt="TripCopycat" style={{ height:"32px", width:"32px", objectFit:"contain" }} />
-            <span style={{ fontSize:"10px", fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", color:C.slateLight }}>Copy the Trip. Own the Experience.</span>
+          <div style={{ marginBottom:"24px" }}>
+            <img src="/copycat.png" alt="TripCopycat" style={{ height:"90px", width:"90px", objectFit:"contain", objectPosition:"top" }} />
           </div>
           <h1 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:"clamp(36px,6vw,62px)", fontWeight:700, color:C.slate, margin:"0 0 20px", lineHeight:1.1, letterSpacing:"-0.01em" }}>
             Planned by them.<br/>Perfected by you.
