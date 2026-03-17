@@ -23,39 +23,42 @@ function runContentFilter(trip) {
   return { passed: flags.length === 0, flags };
 }
 
-// ── Serene Coastal Design Tokens ─────────────────────────────────────────────
-// Primary:   Sky Azure   #5BA4CF  /  #3D8EB9  (deeper)
-// Secondary: Sand Beige  #F5EFE6  /  #EDE3D4  (warm card bg)
-// Accent:    Crisp White #FFFFFF
-// Surface:   Seafoam     #EAF4F8  (page bg)
-// Text:      Deep Slate  #2C3E50  (headings)  #5D7A8A (muted)
-// Borders:   Tide        #C8DFE8
-// Hero grad: Azure → Cerulean #5BA4CF → #2980B9
+// ── Warm Nomad Design Tokens ─────────────────────────────────────────────────
+// Primary:   Deep Navy    #1C2B3A  (headings, nav text, hero type)
+// Secondary: Warm Sand    #C4A882  (CTA buttons, accents)
+// Surface:   Cream        #FAF7F2  (page bg)
+// Card:      Off-White    #FFFFFF  (card bg)
+// Border:    Linen        #E8DDD0  (borders, dividers)
+// Accent:    Terracotta   #C1692A  (tags, highlights)
+// Font:      Playfair Display (display) + Nunito (body)
 
 const C = {
-  azure:       "#5BA4CF",
-  azureDeep:   "#3D8EB9",
-  azureDark:   "#2980B9",
-  cerulean:    "#1A6A9A",
-  sand:        "#F5EFE6",
-  sandDeep:    "#EDE3D4",
-  sandBorder:  "#DDD0BE",
-  seafoam:     "#EAF4F8",
-  seafoamDeep: "#D6EAF2",
+  azure:       "#C4A882",
+  azureDeep:   "#A8896A",
+  azureDark:   "#1C2B3A",
+  cerulean:    "#1C2B3A",
+  sand:        "#F0E8DC",
+  sandDeep:    "#E8DDD0",
+  sandBorder:  "#D4C4B0",
+  seafoam:     "#FAF7F2",
+  seafoamDeep: "#F0E8DC",
   white:       "#FFFFFF",
-  tide:        "#C8DFE8",
-  tideDeep:    "#A8C8D8",
-  slate:       "#2C3E50",
-  slateMid:    "#4A6572",
-  slateLight:  "#5D7A8A",
-  muted:       "#8AAAB8",
-  mutedLight:  "#B0CAD4",
-  green:       "#2E9E78",
-  greenBg:     "#E8F7F2",
-  amber:       "#C97D2E",
-  amberBg:     "#FDF2E3",
-  red:         "#C0392B",
+  tide:        "#E8DDD0",
+  tideDeep:    "#D4C4B0",
+  slate:       "#1C2B3A",
+  slateMid:    "#3D2B1F",
+  slateLight:  "#6B4F3A",
+  muted:       "#A89080",
+  mutedLight:  "#C4AFA0",
+  green:       "#7A9E5A",
+  greenBg:     "#EEF5E8",
+  amber:       "#C1692A",
+  amberBg:     "#FDF0E6",
+  red:         "#B03A2E",
   redBg:       "#FDECEA",
+  cta:         "#C4A882",
+  ctaText:     "#1C2B3A",
+  ctaHover:    "#A8896A",
 };
 
 const SAMPLE_TRIPS = [
@@ -345,7 +348,7 @@ function PhotoImportModal({ onClose }) {
           <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
             <span style={{ fontSize:"22px" }}>📸</span>
             <div>
-              <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif" }}>Photo Album Import</div>
+              <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif" }}>Photo Album Import</div>
               <div style={{ fontSize:"11px", color:C.slateLight }}>AI reads GPS metadata + image content to reconstruct your itinerary</div>
             </div>
           </div>
@@ -504,7 +507,7 @@ function EmailImportModal({ onClose }) {
           <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
             <span style={{ fontSize:"22px" }}>📧</span>
             <div>
-              <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif" }}>Email & Booking Import</div>
+              <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif" }}>Email & Booking Import</div>
               <div style={{ fontSize:"11px", color:C.slateLight }}>Parses flight, hotel, restaurant & tour confirmations automatically</div>
             </div>
           </div>
@@ -601,7 +604,7 @@ function SmartImportHub({ onClose }) {
       <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"540px", overflow:"hidden", boxShadow:`0 32px 64px rgba(44,62,80,0.2)`, border:`1px solid ${C.tide}` }}>
         <div style={{ padding:"26px 30px", borderBottom:`1px solid ${C.tide}`, display:"flex", justifyContent:"space-between", alignItems:"flex-start", background:C.seafoam }}>
           <div>
-            <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif" }}>Smart Import</div>
+            <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif" }}>Smart Import</div>
             <div style={{ fontSize:"11px", color:C.slateLight, marginTop:"3px" }}>Auto-build your blueprint from existing data</div>
           </div>
           <button onClick={onClose} style={{ background:C.seafoamDeep, border:"none", color:C.slateLight, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>×</button>
@@ -648,7 +651,7 @@ function ExportModal({ trip, onClose }) {
       <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"660px", overflow:"hidden", boxShadow:`0 32px 64px rgba(44,62,80,0.22)`, border:`1px solid ${C.tide}` }}>
         <div style={{ padding:"22px 26px", borderBottom:`1px solid ${C.tide}`, display:"flex", justifyContent:"space-between", alignItems:"center", background:C.seafoam }}>
           <div>
-            <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif" }}>Export Itinerary</div>
+            <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif" }}>Export Itinerary</div>
             <div style={{ fontSize:"11px", color:C.slateLight, marginTop:"2px" }}>Plain text · paste into Notes, iMessage, email, WhatsApp</div>
           </div>
           <div style={{ display:"flex", gap:"7px" }}>
@@ -678,7 +681,7 @@ function DailyItinerary({ days }) {
     <div>
       <div style={{ display:"flex", gap:"7px", overflowX:"auto", paddingBottom:"10px", marginBottom:"22px" }}>
         {days.map((day, i) => (
-          <button key={i} onClick={() => setActive(i)} style={{ padding:"9px 15px", borderRadius:"10px", border:`1px solid ${active===i?C.azure:C.tide}`, cursor:"pointer", flexShrink:0, textAlign:"left", background:active===i?C.azure:C.white, color:active===i?C.white:C.slateLight, boxShadow:active===i?`0 4px 12px ${C.azure}44`:"none", transition:"all .15s" }}>
+          <button key={i} onClick={() => setActive(i)} style={{ padding:"9px 15px", borderRadius:"10px", border:`1px solid ${active===i?C.slate:C.tide}`, cursor:"pointer", flexShrink:0, textAlign:"left", background:active===i?C.slate:C.white, color:active===i?C.white:C.slateLight, boxShadow:active===i?`0 4px 12px rgba(28,43,58,0.22)`:"none", transition:"all .15s" }}>
             <div style={{ fontSize:"9px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", opacity:.75 }}>Day {day.day}</div>
             <div style={{ fontSize:"12px", fontWeight:700, marginTop:"2px" }}>{day.date}</div>
             <div style={{ fontSize:"10px", marginTop:"2px", opacity:.85 }}>{day.title}</div>
@@ -687,7 +690,7 @@ function DailyItinerary({ days }) {
       </div>
       <div style={{ marginBottom:"18px" }}>
         <div style={{ fontSize:"10px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.08em", color:C.muted, marginBottom:"3px" }}>Day {d.day} · {d.date}</div>
-        <div style={{ fontSize:"21px", fontWeight:700, color:C.slate, fontFamily:"'Cormorant Garamond',serif" }}>{d.title}</div>
+        <div style={{ fontSize:"21px", fontWeight:700, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif" }}>{d.title}</div>
       </div>
       <div style={{ position:"relative" }}>
         <div style={{ position:"absolute", left:"68px", top:0, bottom:0, width:"1px", background:C.tide }} />
@@ -728,11 +731,11 @@ function TripModal({ trip, onClose }) {
         <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"880px", boxShadow:`0 32px 64px rgba(44,62,80,0.2)`, overflow:"hidden", border:`1px solid ${C.tide}` }}>
 
           {/* header — coastal gradient */}
-          <div style={{ background:`linear-gradient(135deg,${C.azureDark} 0%,${C.azure} 60%,#7EC8E3 100%)`, padding:"26px 30px", color:C.white }}>
+          <div style={{ background:`linear-gradient(135deg,${C.slate} 0%,${C.slateMid} 100%)`, padding:"26px 30px", color:C.white }}>
             <div style={{ display:"flex", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:"10px", fontWeight:700, letterSpacing:"0.1em", opacity:.65, textTransform:"uppercase", marginBottom:"7px" }}>{trip.region} · {trip.duration} · {trip.date}</div>
-                <h2 style={{ margin:0, fontSize:"27px", fontWeight:700, fontFamily:"'Cormorant Garamond',serif" }}>{trip.title}</h2>
+                <h2 style={{ margin:0, fontSize:"27px", fontWeight:700, fontFamily:"'Playfair Display',Georgia,serif" }}>{trip.title}</h2>
                 <div style={{ marginTop:"4px", opacity:.8, fontSize:"14px" }}>{trip.destination}</div>
               </div>
               <div style={{ display:"flex", gap:"7px", alignItems:"flex-start" }}>
@@ -750,7 +753,7 @@ function TripModal({ trip, onClose }) {
           {/* tabs */}
           <div style={{ display:"flex", borderBottom:`1px solid ${C.tide}`, background:C.seafoam }}>
             {[{id:"overview",l:"Overview"},{id:"daily",l:"📅 Daily Itinerary"},{id:"details",l:"🗂️ All Details"}].map(t => (
-              <button key={t.id} onClick={() => setView(t.id)} style={{ padding:"12px 20px", fontSize:"13px", fontWeight:700, border:"none", cursor:"pointer", background:"transparent", color:view===t.id?C.azureDeep:C.muted, borderBottom:view===t.id?`2px solid ${C.azure}`:"2px solid transparent", transition:"all .15s" }}>{t.l}</button>
+              <button key={t.id} onClick={() => setView(t.id)} style={{ padding:"12px 20px", fontSize:"13px", fontWeight:700, border:"none", cursor:"pointer", background:"transparent", color:view===t.id?C.azureDeep:C.muted, borderBottom:view===t.id?`2px solid ${C.amber}`:"2px solid transparent", transition:"all .15s" }}>{t.l}</button>
             ))}
           </div>
 
@@ -776,7 +779,7 @@ function TripModal({ trip, onClose }) {
                     </div>
                   ))}
                 </div>
-                <button onClick={() => setView("daily")} style={{ width:"100%", padding:"12px", background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, border:"none", borderRadius:"10px", fontSize:"13px", fontWeight:700, cursor:"pointer" }}>
+                <button onClick={() => setView("daily")} style={{ width:"100%", padding:"12px", background:C.cta, color:C.white, border:"none", borderRadius:"10px", fontSize:"13px", fontWeight:700, cursor:"pointer" }}>
                   📅 View Day-by-Day Itinerary →
                 </button>
               </div>
@@ -836,12 +839,12 @@ function TripModal({ trip, onClose }) {
 function TripCard({ trip, onClick }) {
   return (
     <div onClick={() => onClick(trip)} style={{ background:C.white, border:`1px solid ${C.tide}`, borderRadius:"16px", padding:"22px", cursor:"pointer", transition:"all .2s", boxShadow:`0 2px 8px rgba(44,62,80,0.06)` }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow=`0 8px 28px rgba(91,164,207,0.18)`; e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.borderColor=C.azure; }}
+      onMouseEnter={e => { e.currentTarget.style.boxShadow=`0 8px 28px rgba(28,43,58,0.12)`; e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.borderColor=C.azure; }}
       onMouseLeave={e => { e.currentTarget.style.boxShadow=`0 2px 8px rgba(44,62,80,0.06)`; e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=C.tide; }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"11px" }}>
         <div>
-          <div style={{ fontSize:"10px", fontWeight:700, letterSpacing:"0.08em", color:C.azure, textTransform:"uppercase", marginBottom:"3px" }}>{trip.region}</div>
-          <h3 style={{ fontSize:"17px", fontWeight:700, color:C.slate, margin:0, fontFamily:"'Cormorant Garamond',serif" }}>{trip.title}</h3>
+          <div style={{ fontSize:"10px", fontWeight:700, letterSpacing:"0.08em", color:C.amber, textTransform:"uppercase", marginBottom:"3px" }}>{trip.region}</div>
+          <h3 style={{ fontSize:"17px", fontWeight:700, color:C.slate, margin:0, fontFamily:"'Playfair Display',Georgia,serif" }}>{trip.title}</h3>
           <div style={{ fontSize:"12px", color:C.slateLight, marginTop:"3px" }}>{trip.destination} · {trip.duration}</div>
         </div>
         <span style={{ fontSize:"24px" }}>🌍</span>
@@ -876,7 +879,7 @@ function AddTripModal({ onClose, onAdd }) {
     <div style={{ position:"fixed", inset:0, background:"rgba(44,62,80,0.65)", zIndex:1000, display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"36px 16px", overflowY:"auto", backdropFilter:"blur(6px)" }}>
       <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"680px", overflow:"hidden", boxShadow:`0 32px 64px rgba(44,62,80,0.2)`, border:`1px solid ${C.tide}` }}>
         {/* header */}
-        <div style={{ background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, padding:"24px 30px", color:C.white, display:"flex", justifyContent:"space-between" }}>
+        <div style={{ background:C.cta, padding:"24px 30px", color:C.white, display:"flex", justifyContent:"space-between" }}>
           <div>
             <div style={{ display:"flex", gap:"7px", marginBottom:"9px", alignItems:"center" }}>
               {["Overview","Feedback","Details"].map((s,i) => (<span key={s} style={{ display:"flex", alignItems:"center", gap:"5px" }}>
@@ -885,7 +888,7 @@ function AddTripModal({ onClose, onAdd }) {
                 {i<2&&<span style={{ opacity:.35, fontSize:"10px" }}>›</span>}
               </span>))}
             </div>
-            <h2 style={{ margin:0, fontSize:"19px", fontFamily:"'Cormorant Garamond',serif", fontWeight:700 }}>
+            <h2 style={{ margin:0, fontSize:"19px", fontFamily:"'Playfair Display',Georgia,serif", fontWeight:700 }}>
               {["Overview","Feedback","Details"][step-1]}
             </h2>
           </div>
@@ -938,7 +941,7 @@ function AddTripModal({ onClose, onAdd }) {
 
         <div style={{ padding:"12px 30px 24px", display:"flex", justifyContent:"space-between", background:C.seafoam, borderTop:`1px solid ${C.tide}` }}>
           <button onClick={()=>step>1?setStep(s=>s-1):onClose()} style={{ padding:"8px 18px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"12px", fontWeight:600, cursor:"pointer" }}>{step>1?"← Back":"Cancel"}</button>
-          <button onClick={()=>step<3?setStep(s=>s+1):(onAdd({...form,id:Date.now(),author:"You"}),onClose())} style={{ padding:"8px 18px", borderRadius:"8px", border:"none", background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, fontSize:"12px", fontWeight:600, cursor:"pointer" }}>
+          <button onClick={()=>step<3?setStep(s=>s+1):(onAdd({...form,id:Date.now(),author:"You"}),onClose())} style={{ padding:"8px 18px", borderRadius:"8px", border:"none", background:C.cta, color:C.white, fontSize:"12px", fontWeight:600, cursor:"pointer" }}>
             {step<3?"Next →":"✓ Publish Blueprint"}
           </button>
         </div>
@@ -1076,7 +1079,7 @@ function SubmitTripModal({ onClose }) {
       <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"720px", overflow:"hidden", boxShadow:`0 32px 64px rgba(44,62,80,0.22)`, border:`1px solid ${C.tide}` }}>
         <div style={{ padding:"20px 28px", borderBottom:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
-            <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif" }}>Submit a Blueprint</div>
+            <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif" }}>Submit a Blueprint</div>
             <div style={{ fontSize:"11px", color:C.slateLight, marginTop:"2px" }}>Share your trip with the TripBlueprints community</div>
           </div>
           <button onClick={onClose} style={{ background:C.seafoamDeep, border:"none", color:C.slateLight, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>x</button>
@@ -1178,16 +1181,16 @@ function SubmitTripModal({ onClose }) {
         {step === "done" && (
           <div style={{ padding:"60px 28px", textAlign:"center" }}>
             <div style={{ fontSize:"48px", marginBottom:"14px" }}>🎉</div>
-            <div style={{ fontSize:"20px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif", marginBottom:"8px" }}>Blueprint Published!</div>
+            <div style={{ fontSize:"20px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif", marginBottom:"8px" }}>Blueprint Published!</div>
             <div style={{ fontSize:"13px", color:C.slateLight, maxWidth:"380px", margin:"0 auto 24px", lineHeight:1.6 }}>Your trip passed all checks and is now live on TripBlueprints.</div>
-            <button onClick={onClose} style={{ padding:"11px 28px", borderRadius:"10px", border:"none", background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, fontWeight:700, fontSize:"13px", cursor:"pointer" }}>View the site</button>
+            <button onClick={onClose} style={{ padding:"11px 28px", borderRadius:"10px", border:"none", background:C.cta, color:C.white, fontWeight:700, fontSize:"13px", cursor:"pointer" }}>View the site</button>
           </div>
         )}
 
         {step === "flagged" && (
           <div style={{ padding:"50px 28px", textAlign:"center" }}>
             <div style={{ fontSize:"40px", marginBottom:"14px" }}>📋</div>
-            <div style={{ fontSize:"18px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif", marginBottom:"8px" }}>Submission Received</div>
+            <div style={{ fontSize:"18px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif", marginBottom:"8px" }}>Submission Received</div>
             <div style={{ fontSize:"13px", color:C.slateLight, maxWidth:"380px", margin:"0 auto 16px", lineHeight:1.6 }}>Your trip is under review. We will be in touch at <strong>{submitterEmail}</strong>.</div>
             {filterResult?.flags?.length > 0 && (
               <div style={{ background:C.amberBg, border:`1px solid ${C.amber}`, borderRadius:"10px", padding:"12px 16px", maxWidth:"380px", margin:"0 auto 20px", textAlign:"left" }}>
@@ -1202,7 +1205,7 @@ function SubmitTripModal({ onClose }) {
         {step === "form" && (
           <div style={{ padding:"14px 28px", borderTop:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"space-between" }}>
             <button onClick={() => setStep("prompt")} style={{ padding:"9px 18px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"12px", fontWeight:600, cursor:"pointer" }}>Back</button>
-            <button onClick={handleSubmit} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>Submit Blueprint</button>
+            <button onClick={handleSubmit} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:C.cta, color:C.ctaText, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>Submit Blueprint</button>
           </div>
         )}
       </div>
@@ -1249,7 +1252,7 @@ function AdminQueueModal({ onClose }) {
       <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"800px", overflow:"hidden", boxShadow:`0 32px 64px rgba(44,62,80,0.22)`, border:`1px solid ${C.tide}` }}>
         <div style={{ padding:"20px 28px", borderBottom:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
-            <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif" }}>Submission Queue</div>
+            <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif" }}>Submission Queue</div>
             <div style={{ fontSize:"11px", color:C.slateLight, marginTop:"2px" }}>{submissions.filter(s=>s.status==="flagged"||s.status==="pending").length} awaiting review</div>
           </div>
           <button onClick={onClose} style={{ background:C.seafoamDeep, border:"none", color:C.slateLight, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>x</button>
@@ -1327,7 +1330,7 @@ function AdminLoginModal({ onSuccess, onClose }) {
       <div style={{ background:C.white, borderRadius:"20px", padding:"40px 36px", width:"100%", maxWidth:"400px", boxShadow:`0 32px 64px rgba(44,62,80,0.25)`, border:`1px solid ${C.tide}` }}>
         <div style={{ textAlign:"center", marginBottom:"28px" }}>
           <div style={{ fontSize:"36px", marginBottom:"12px" }}>🔐</div>
-          <div style={{ fontSize:"20px", fontWeight:800, color:C.slate, fontFamily:"'Cormorant Garamond',serif" }}>Admin Access</div>
+          <div style={{ fontSize:"20px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif" }}>Admin Access</div>
           <div style={{ fontSize:"12px", color:C.slateLight, marginTop:"4px" }}>TripBlueprints Admin Panel</div>
         </div>
         <input
@@ -1340,7 +1343,7 @@ function AdminLoginModal({ onSuccess, onClose }) {
           autoFocus
         />
         {error && <div style={{ fontSize:"12px", color:C.red, textAlign:"center", marginBottom:"10px", fontWeight:600 }}>Incorrect password — try again</div>}
-        <button onClick={attempt} style={{ width:"100%", padding:"11px", borderRadius:"10px", border:"none", background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, fontSize:"14px", fontWeight:700, cursor:"pointer", marginBottom:"10px" }}>
+        <button onClick={attempt} style={{ width:"100%", padding:"11px", borderRadius:"10px", border:"none", background:C.cta, color:C.white, fontSize:"14px", fontWeight:700, cursor:"pointer", marginBottom:"10px" }}>
           Enter Admin Panel
         </button>
         <button onClick={onClose} style={{ width:"100%", padding:"9px", borderRadius:"10px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"13px", fontWeight:600, cursor:"pointer" }}>
@@ -1373,10 +1376,10 @@ function AdminEditModal({ trip, onSave, onClose }) {
       <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"780px", overflow:"hidden", boxShadow:`0 32px 64px rgba(44,62,80,0.25)`, border:`1px solid ${C.tide}` }}>
 
         {/* header */}
-        <div style={{ background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, padding:"20px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <div style={{ background:C.cta, padding:"20px 28px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div>
             <div style={{ fontSize:"11px", fontWeight:700, color:"rgba(255,255,255,0.7)", textTransform:"uppercase", letterSpacing:"0.1em" }}>Admin — Editing</div>
-            <div style={{ fontSize:"18px", fontWeight:800, color:C.white, fontFamily:"'Cormorant Garamond',serif", marginTop:"2px" }}>{form.title}</div>
+            <div style={{ fontSize:"18px", fontWeight:800, color:C.white, fontFamily:"'Playfair Display',Georgia,serif", marginTop:"2px" }}>{form.title}</div>
           </div>
           <div style={{ display:"flex", gap:"8px" }}>
             <button onClick={() => onSave(form)} style={{ padding:"8px 20px", borderRadius:"8px", border:"none", background:C.white, color:C.azureDark, fontSize:"12px", fontWeight:800, cursor:"pointer" }}>✓ Save Changes</button>
@@ -1450,7 +1453,7 @@ function AdminEditModal({ trip, onSave, onClose }) {
         {/* footer */}
         <div style={{ padding:"16px 28px", borderTop:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"space-between" }}>
           <button onClick={onClose} style={{ padding:"9px 20px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"12px", fontWeight:600, cursor:"pointer" }}>Cancel</button>
-          <button onClick={() => onSave(form)} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>✓ Save Changes</button>
+          <button onClick={() => onSave(form)} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:C.cta, color:C.ctaText, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>✓ Save Changes</button>
         </div>
       </div>
     </div>
@@ -1508,12 +1511,12 @@ export default function App() {
   ), [trips, search, region, tag]);
 
   return (
-    <div style={{ minHeight:"100vh", background:C.seafoam, fontFamily:"'Jost',system-ui,sans-serif" }}>
-      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <div style={{ minHeight:"100vh", background:C.seafoam, fontFamily:"'Nunito',system-ui,sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
       {/* Admin banner */}
       {isAdmin && (
-        <div style={{ background:`linear-gradient(90deg,${C.azureDark},${C.azure})`, padding:"8px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div style={{ background:`linear-gradient(90deg,${C.slate},${C.slateLight})`, padding:"8px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div style={{ fontSize:"12px", fontWeight:700, color:C.white, display:"flex", alignItems:"center", gap:"8px" }}>
             <span>🔐</span> Admin Mode Active — you can edit, delete and add trips
           </div>
@@ -1522,33 +1525,49 @@ export default function App() {
       )}
 
       {/* Nav */}
-      <nav style={{ background:C.white, borderBottom:`1px solid ${C.tide}`, padding:"0 24px", position:"sticky", top:0, zIndex:100, boxShadow:`0 1px 8px rgba(91,164,207,0.08)` }}>
+      <nav style={{ background:C.white, borderBottom:`1px solid ${C.tide}`, padding:"0 24px", position:"sticky", top:0, zIndex:100, boxShadow:`0 1px 6px rgba(28,43,58,0.06)` }}>
         <div style={{ maxWidth:"1100px", margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between", height:"58px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
             <span style={{ fontSize:"19px" }}>🧭</span>
-            <span style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:"22px", color:C.slate, letterSpacing:"0.01em" }}>TripBlueprints</span>
+            <span style={{ fontFamily:"'Playfair Display',Georgia,serif", fontWeight:700, fontSize:"22px", color:C.slate, letterSpacing:"0.01em" }}>TripBlueprints</span>
             <span style={{ fontSize:"9px", background:C.seafoamDeep, color:C.azureDeep, fontWeight:700, padding:"2px 7px", borderRadius:"20px", border:`1px solid ${C.tide}` }}>beta</span>
           </div>
           <div style={{ display:"flex", gap:"7px" }}>
-            {!isAdmin && <button onClick={() => setShowSubmit(true)} style={{ background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, border:"none", borderRadius:"8px", padding:"7px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 3px 12px ${C.azure}55` }}>+ Submit a Trip</button>}
+            {!isAdmin && <button onClick={() => setShowSubmit(true)} style={{ background:C.cta, color:C.ctaText, border:"none", borderRadius:"8px", padding:"7px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 3px 12px rgba(196,168,130,0.4)` }}>+ Submit a Trip</button>}
             {isAdmin && <button onClick={() => setShowQueue(true)} style={{ background:C.amberBg, color:C.amber, border:`1px solid ${C.amber}44`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>📋 Queue</button>}
             {isAdmin && <button onClick={() => setShowImport(true)} style={{ background:C.seafoam, color:C.slateMid, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>🤖 Smart Import</button>}
-            {isAdmin && <button onClick={() => setShowAdd(true)} style={{ background:`linear-gradient(135deg,${C.azureDark},${C.azure})`, color:C.white, border:"none", borderRadius:"8px", padding:"7px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 3px 12px ${C.azure}55` }}>+ Add Blueprint</button>}
+            {isAdmin && <button onClick={() => setShowAdd(true)} style={{ background:C.cta, color:C.ctaText, border:"none", borderRadius:"8px", padding:"7px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 3px 12px rgba(196,168,130,0.4)` }}>+ Add Blueprint</button>}
             {!isAdmin && <button onClick={() => setShowAdminLogin(true)} style={{ background:C.seafoam, color:C.muted, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 12px", fontSize:"11px", fontWeight:600, cursor:"pointer", opacity:0.4 }}>🔐</button>}
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <div style={{ background:`linear-gradient(160deg,${C.azureDark} 0%,${C.azure} 50%,#85C1E9 85%,${C.sand} 100%)`, padding:"56px 24px 52px", textAlign:"center", color:C.white, position:"relative", overflow:"hidden" }}>
-        <div style={{ position:"absolute", inset:0, background:"radial-gradient(ellipse 80% 60% at 20% 80%, rgba(255,255,255,0.08) 0%, transparent 60%), radial-gradient(ellipse 60% 40% at 80% 20%, rgba(255,255,255,0.06) 0%, transparent 50%)", pointerEvents:"none" }} />
-        <div style={{ position:"relative" }}>
-          <div style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.18em", textTransform:"uppercase", opacity:.75, marginBottom:"12px" }}>The Traveler's Playbook</div>
-          <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:"46px", fontWeight:700, margin:"0 0 12px", lineHeight:1.1 }}>Real Trips. Built to Recreate.</h1>
-          <p style={{ fontSize:"15px", opacity:.8, margin:"0 0 30px", maxWidth:"420px", marginLeft:"auto", marginRight:"auto", fontWeight:300, lineHeight:1.6 }}>Crowd-sourced itineraries with day-by-day detail — from travelers who've actually been there.</p>
-          <div style={{ maxWidth:"480px", margin:"0 auto", position:"relative" }}>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search destinations, activities, trip types…" style={{ width:"100%", padding:"13px 20px 13px 46px", borderRadius:"50px", border:`2px solid rgba(255,255,255,0.4)`, fontSize:"13px", outline:"none", boxSizing:"border-box", background:"rgba(255,255,255,0.92)", color:C.slate, boxShadow:`0 8px 32px rgba(44,62,80,0.15)` }} />
-            <span style={{ position:"absolute", left:"16px", top:"50%", transform:"translateY(-50%)", fontSize:"16px" }}>🔍</span>
+      {/* Hero — Warm Nomad */}
+      <div style={{ background:C.seafoam, padding:"72px 24px 64px", textAlign:"center", position:"relative", overflow:"hidden", borderBottom:`1px solid ${C.tide}` }}>
+        {/* subtle texture overlay */}
+        <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle at 20% 50%, rgba(196,168,130,0.08) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(193,105,42,0.06) 0%, transparent 50%)", pointerEvents:"none" }} />
+        <div style={{ position:"relative", maxWidth:"780px", margin:"0 auto" }}>
+          <div style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:C.sandDeep, borderRadius:"30px", padding:"5px 16px", marginBottom:"24px" }}>
+            <span style={{ fontSize:"12px" }}>🧭</span>
+            <span style={{ fontSize:"10px", fontWeight:700, letterSpacing:"0.14em", textTransform:"uppercase", color:C.slateLight }}>The Traveler's Playbook</span>
+          </div>
+          <h1 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:"clamp(36px,6vw,62px)", fontWeight:700, color:C.slate, margin:"0 0 20px", lineHeight:1.1, letterSpacing:"-0.01em" }}>
+            Planned by them.<br/>Perfected by you.
+          </h1>
+          <p style={{ fontSize:"clamp(14px,2vw,17px)", color:C.slateLight, margin:"0 0 32px", maxWidth:"580px", marginLeft:"auto", marginRight:"auto", fontWeight:400, lineHeight:1.75 }}>
+            The ultimate cheat code for your next vacation. We crowd-source highly detailed, recreatable trip blueprints so you don't have to reinvent the wheel. Steal the logistics, duplicate the route, or customize and make it your own — spend your time looking forward to the destination.
+          </p>
+          <div style={{ display:"flex", gap:"12px", justifyContent:"center", alignItems:"center", flexWrap:"wrap", marginBottom:"36px" }}>
+            <button style={{ background:C.cta, color:C.ctaText, border:"none", borderRadius:"50px", padding:"14px 32px", fontSize:"14px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif", letterSpacing:"0.02em", boxShadow:`0 4px 18px rgba(196,168,130,0.45)` }}>
+              Leverage a Blueprint
+            </button>
+            <button onClick={() => {}} style={{ background:"transparent", color:C.slateLight, border:`1.5px solid ${C.tide}`, borderRadius:"50px", padding:"14px 28px", fontSize:"13px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+              Submit a Trip →
+            </button>
+          </div>
+          <div style={{ maxWidth:"520px", margin:"0 auto", position:"relative" }}>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search destinations, trips, activities…" style={{ width:"100%", padding:"14px 20px 14px 48px", borderRadius:"50px", border:`1.5px solid ${C.tide}`, fontSize:"13px", outline:"none", boxSizing:"border-box", background:C.white, color:C.slate, boxShadow:`0 4px 20px rgba(28,43,58,0.08)`, fontFamily:"'Nunito',sans-serif" }} />
+            <span style={{ position:"absolute", left:"18px", top:"50%", transform:"translateY(-50%)", fontSize:"16px" }}>🔍</span>
           </div>
         </div>
       </div>
@@ -1557,10 +1576,10 @@ export default function App() {
       <div style={{ background:C.white, borderBottom:`1px solid ${C.tide}`, padding:"10px 24px" }}>
         <div style={{ maxWidth:"1100px", margin:"0 auto", display:"flex", gap:"5px", flexWrap:"wrap", alignItems:"center" }}>
           <span style={{ fontSize:"9px", fontWeight:700, color:C.muted, marginRight:"3px", textTransform:"uppercase", letterSpacing:"0.08em" }}>Region</span>
-          {REGIONS.map(r=><button key={r} onClick={()=>setRegion(r)} style={{ padding:"3px 10px", borderRadius:"20px", border:`1px solid ${region===r?C.azure:C.tide}`, background:region===r?C.azure:C.white, color:region===r?C.white:C.slateLight, fontSize:"11px", fontWeight:600, cursor:"pointer", transition:"all .12s" }}>{r}</button>)}
+          {REGIONS.map(r=><button key={r} onClick={()=>setRegion(r)} style={{ padding:"3px 10px", borderRadius:"20px", border:`1px solid ${region===r?C.slate:C.tide}`, background:region===r?C.slate:C.white, color:region===r?C.white:C.slateLight, fontSize:"11px", fontWeight:600, cursor:"pointer", transition:"all .12s" }}>{r}</button>)}
           <div style={{ width:"1px", height:"16px", background:C.tide, margin:"0 4px" }} />
           <span style={{ fontSize:"9px", fontWeight:700, color:C.muted, marginRight:"3px", textTransform:"uppercase", letterSpacing:"0.08em" }}>Type</span>
-          {TAGS.map(t=><button key={t} onClick={()=>setTag(t)} style={{ padding:"3px 10px", borderRadius:"20px", border:`1px solid ${tag===t?C.azure:C.tide}`, background:tag===t?C.azure:C.white, color:tag===t?C.white:C.slateLight, fontSize:"11px", fontWeight:600, cursor:"pointer", transition:"all .12s" }}>{t}</button>)}
+          {TAGS.map(t=><button key={t} onClick={()=>setTag(t)} style={{ padding:"3px 10px", borderRadius:"20px", border:`1px solid ${tag===t?C.slate:C.tide}`, background:tag===t?C.slate:C.white, color:tag===t?C.white:C.slateLight, fontSize:"11px", fontWeight:600, cursor:"pointer", transition:"all .12s" }}>{t}</button>)}
         </div>
       </div>
 
