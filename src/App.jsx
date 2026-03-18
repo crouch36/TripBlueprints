@@ -1041,7 +1041,7 @@ function SubmitTripModal({ onClose, currentUser, displayName }) {
   const [filterResult, setFilterResult] = useState(null);
   const [submitterName, setSubmitterName] = useState(displayName || "");
   const [submitterEmail, setSubmitterEmail] = useState(currentUser?.email || "");
-  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [form, setForm] = useState({
     title:"", destination:"", region:"Europe", duration:"", travelers:"", date:"", tags:[], loves:"", doNext:"",
     airfare:[{item:"",detail:"",tip:""}], hotels:[{item:"",detail:"",tip:""}],
@@ -1234,9 +1234,17 @@ function SubmitTripModal({ onClose, currentUser, displayName }) {
         )}
 
         {step === "form" && (
-          <div style={{ padding:"14px 28px", borderTop:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"space-between" }}>
-            <button onClick={() => setStep("prompt")} style={{ padding:"9px 18px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"12px", fontWeight:600, cursor:"pointer" }}>Back</button>
-            <button onClick={handleSubmit} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:C.cta, color:C.ctaText, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>Submit Trip</button>
+          <div style={{ padding:"14px 28px", borderTop:`1px solid ${C.tide}`, background:C.seafoam }}>
+            <label style={{ display:"flex", alignItems:"flex-start", gap:"10px", marginBottom:"12px", cursor:"pointer" }}>
+              <input type="checkbox" checked={agreedToTerms} onChange={e=>setAgreedToTerms(e.target.checked)} style={{ marginTop:"2px", accentColor:C.amber, width:"15px", height:"15px", flexShrink:0 }} />
+              <span style={{ fontSize:"11px", color:C.slateMid, lineHeight:1.6 }}>
+                I agree to the <span onClick={e=>{e.preventDefault();window.__setShowLegal&&window.__setShowLegal(true);}} style={{ color:C.amber, fontWeight:700, cursor:"pointer", textDecoration:"underline" }}>Terms of Service</span> and grant TripCopycat permission to share my itinerary with the community.
+              </span>
+            </label>
+            <div style={{ display:"flex", justifyContent:"space-between" }}>
+              <button onClick={() => setStep("prompt")} style={{ padding:"9px 18px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"12px", fontWeight:600, cursor:"pointer" }}>Back</button>
+              <button onClick={handleSubmit} disabled={!agreedToTerms} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:agreedToTerms?C.cta:C.tide, color:agreedToTerms?C.ctaText:C.muted, fontSize:"12px", fontWeight:700, cursor:agreedToTerms?"pointer":"not-allowed", transition:"all .15s" }}>Submit Trip</button>
+            </div>
           </div>
         )}
       </div>
@@ -1669,6 +1677,69 @@ function AdminEditModal({ trip, onSave, onClose }) {
   );
 }
 
+// ── Legal Modal ───────────────────────────────────────────────────────────────
+
+function LegalModal({ onClose }) {
+  const sect = { fontSize:"15px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif", marginTop:"28px", marginBottom:"8px" };
+  const sub  = { fontSize:"13px", fontWeight:700, color:C.slateLight, marginTop:"14px", marginBottom:"4px" };
+  const body = { fontSize:"13px", color:C.slateMid, lineHeight:1.75, margin:"0 0 8px 0" };
+  const bullet = { fontSize:"13px", color:C.slateMid, lineHeight:1.75, margin:"4px 0 4px 16px" };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(44,62,80,0.75)", zIndex:5000, display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"28px 16px", overflowY:"auto", backdropFilter:"blur(8px)" }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"720px", boxShadow:`0 32px 64px rgba(44,62,80,0.25)`, overflow:"hidden", border:`1px solid ${C.tide}` }}>
+
+        {/* Header */}
+        <div style={{ background:C.slate, padding:"24px 32px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <div style={{ fontSize:"11px", fontWeight:700, color:"rgba(196,168,130,0.8)", textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"4px" }}>Legal</div>
+            <div style={{ fontSize:"20px", fontWeight:700, color:C.white, fontFamily:"'Playfair Display',Georgia,serif" }}>Terms of Service &amp; Legal Notices</div>
+          </div>
+          <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"none", color:C.white, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"18px" }}>×</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding:"28px 32px 40px", overflowY:"auto", maxHeight:"72vh" }}>
+          <p style={{ ...body, color:C.muted, fontSize:"12px" }}>Last updated: {new Date().toLocaleDateString("en-US", { year:"numeric", month:"long", day:"numeric" })}</p>
+
+          <div style={sect}>1. Ownership of TripCopycat Brand and Assets</div>
+          <p style={body}>The Service and its original content, features, and functionality—including but not limited to the TripCopycat name, the "Cat" logo, website design, text, graphics, and underlying code—are and will remain the exclusive property of TripCopycat and its licensors.</p>
+          <p style={sub}>Trademarks</p>
+          <p style={body}>The name "TripCopycat," the cat logo, and all related names, logos, product and service names, designs, and slogans are trademarks of TripCopycat. You must not use such marks without prior written permission.</p>
+          <p style={sub}>Trade Dress</p>
+          <p style={body}>The "look and feel" of the TripCopycat platform, including its unique color combinations, button shapes, and layout, is protected trade dress.</p>
+          <p style={sub}>Copyright</p>
+          <p style={body}>The site and its contents are protected by copyright, trademark, and other laws of both the United States and foreign countries.</p>
+
+          <div style={sect}>2. User Content Submission License</div>
+          <p style={body}>By submitting a trip itinerary, photos, or descriptions (the "Content") to TripCopycat, you agree to the following:</p>
+          <p style={sub}>Ownership &amp; License</p>
+          <p style={body}>You retain ownership of your original Content. However, by submitting it, you grant TripCopycat a worldwide, royalty-free, perpetual, and non-exclusive license to host, store, use, display, reproduce, modify, and distribute your Content on our website, social media, and in marketing materials.</p>
+          <p style={sub}>The "Copycat" Right</p>
+          <p style={body}>You understand and agree that the purpose of TripCopycat is to allow other users to view, download, and "copycat" your itinerary for their own personal travel use. You grant TripCopycat the right to format your data into downloadable or interactive formats for our community.</p>
+          <p style={sub}>Your Representation</p>
+          <p style={body}>You represent and warrant that you are the original creator of the Content or have the legal right to share it, and that the Content does not violate the intellectual property or privacy rights of any third party.</p>
+          <p style={sub}>No Compensation</p>
+          <p style={body}>You understand that you will not receive financial compensation for submitting Content to TripCopycat, unless otherwise agreed upon in a separate written agreement.</p>
+
+          <div style={sect}>3. Copyright Infringement (DMCA)</div>
+          <p style={body}>We respect the intellectual property rights of others. It is our policy to respond to any claim that Content posted on the Service infringes on the copyright or other intellectual property rights of any person or entity. If you believe your work has been copied in a way that constitutes copyright infringement, please contact us with a description of the allegedly infringing material and your contact information.</p>
+
+          <div style={{ marginTop:"32px", padding:"16px 20px", background:C.seafoam, borderRadius:"12px", border:`1px solid ${C.tide}` }}>
+            <p style={{ ...body, margin:0, fontSize:"12px", color:C.muted }}>Questions about these terms? Contact us at <strong style={{ color:C.slate }}>legal@tripcopycat.com</strong></p>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding:"16px 32px", borderTop:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"flex-end" }}>
+          <button onClick={onClose} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:C.cta, color:C.ctaText, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -1740,6 +1811,8 @@ export default function App() {
   const isAdminUrl = window.location.pathname === "/admin" || window.location.hash === "#admin";
   const [showAdminLogin, setShowAdminLogin] = useState(isAdminUrl);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showLegal, setShowLegal] = useState(false);
+  useEffect(() => { window.__setShowLegal = setShowLegal; }, []);
   const [editingTrip, setEditingTrip] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
@@ -1772,7 +1845,7 @@ export default function App() {
         <div style={{ width:"100%", padding:"0 32px", boxSizing:"border-box", display:"flex", alignItems:"center", justifyContent:"space-between", height:"58px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
             <img src="/copycat.svg" alt="TripCopycat" style={{ height:"44px", width:"44px", objectFit:"contain", background:"transparent", display:"block", mixBlendMode:"multiply" }} />
-            <span style={{ fontFamily:"'Playfair Display',Georgia,serif", fontWeight:700, fontSize:"22px", color:C.slate, letterSpacing:"-0.01em" }}>TripCopycat</span>
+            <span style={{ fontFamily:"'Playfair Display',Georgia,serif", fontWeight:700, fontSize:"22px", color:C.slate, letterSpacing:"-0.01em" }}>TripCopycat<sup style={{ fontSize:"10px", fontWeight:700, verticalAlign:"super", letterSpacing:0 }}>™</sup></span>
             <span style={{ fontSize:"9px", background:C.seafoamDeep, color:C.azureDeep, fontWeight:700, padding:"2px 7px", borderRadius:"20px", border:`1px solid ${C.tide}` }}>beta</span>
           </div>
           <div style={{ display:"flex", gap:"7px" }}>
@@ -1946,6 +2019,13 @@ export default function App() {
       {showQueue     && <AdminQueueModal onClose={() => setShowQueue(false)} />}
       {showAdminLogin && <AdminLoginModal onSuccess={handleAdminLogin} onClose={() => setShowAdminLogin(false)} />}
       {editingTrip   && <AdminEditModal trip={editingTrip} onSave={handleSaveTrip} onClose={() => setEditingTrip(null)} />}
+      {showLegal     && <LegalModal onClose={() => setShowLegal(false)} />}
+
+      {/* Site footer */}
+      <footer style={{ borderTop:`1px solid ${C.tide}`, background:C.white, padding:"16px 32px", display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:"40px" }}>
+        <span style={{ fontSize:"11px", color:C.muted }}>© {new Date().getFullYear()} TripCopycat™. All rights reserved.</span>
+        <button onClick={() => setShowLegal(true)} style={{ fontSize:"11px", color:C.muted, background:"none", border:"none", cursor:"pointer", textDecoration:"underline", fontFamily:"inherit" }}>Terms of Service</button>
+      </footer>
     </div>
   );
 }
