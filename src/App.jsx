@@ -63,7 +63,7 @@ const C = {
 
 const SAMPLE_TRIPS = [
   {
-    id: 1, title: "Scotland with Kids — Edinburgh & Perthshire", destination: "Edinburgh & Perthshire, Scotland", region: "Europe",
+    id: 1, title: "Scotland with Kids — Edinburgh & Perthshire", destination: "Edinburgh & Perthshire, Scotland", region: "Europe", image: "/victoria-street.jpg",
     author: "Andrew M.", date: "May 2025", duration: "9 days", travelers: "Family (young kids)",
     tags: ["family-friendly", "culture", "scenic drives"],
     loves: "The Perthshire farm stay at Pitmeadow Farm is the undisputed highlight — collecting eggs, walking ponies, feeding pigs. Our kids call this their favourite trip ever. Edinburgh has incredible character and is completely walkable. St Andrews on a Sunday when the Old Course is open as a public park is a magical free experience. The Kirkstyle Inn is the kind of local pub you dream about finding.",
@@ -143,7 +143,7 @@ const SAMPLE_TRIPS = [
     ]
   },
   {
-    id: 2, title: "Ireland Guys Trip — Galway & Dublin", destination: "Galway & Dublin, Ireland", region: "Europe",
+    id: 2, title: "Ireland Guys Trip — Galway & Dublin", destination: "Galway & Dublin, Ireland", region: "Europe", image: "/bowes.jpg",
     author: "Andrew M.", date: "2025", duration: "4 days", travelers: "Guys trip",
     tags: ["food & wine", "culture", "adventure"],
     loves: "Sean's Bar is a mandatory stop — opens at 10:30am and there is no better way to start an Ireland trip. Bowe's consistently pours the best pint in Dublin. The trad session at the Crane Bar in Galway is the real thing. Mister S for dinner in Dublin is outstanding — book well ahead. Universal Bar in Galway exceeded all expectations. Stonybatter pub crawl is the highlight of Dublin.",
@@ -730,9 +730,10 @@ function TripModal({ trip, onClose }) {
         onClick={e => e.target === e.currentTarget && onClose()}>
         <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"880px", boxShadow:`0 32px 64px rgba(44,62,80,0.2)`, overflow:"hidden", border:`1px solid ${C.tide}` }}>
 
-          {/* header — coastal gradient */}
-          <div style={{ background:`linear-gradient(135deg,#2C1810 0%,#3D2B1F 100%)`, padding:"26px 30px", color:C.white }}>
-            <div style={{ display:"flex", justifyContent:"space-between" }}>
+          {/* header */}
+          <div style={{ position:"relative", background:`linear-gradient(135deg,#2C1810 0%,#3D2B1F 100%)`, padding:"26px 30px", color:C.white, overflow:"hidden" }}>
+            {trip.image && <img src={trip.image} alt={trip.title} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", objectPosition:"center", opacity:0.35 }} />}
+            <div style={{ position:"relative", zIndex:1, display:"flex", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:"10px", fontWeight:700, letterSpacing:"0.1em", color:"rgba(196,168,130,0.9)", textTransform:"uppercase", marginBottom:"7px" }}>{trip.region} · {trip.duration} · {trip.date}</div>
                 <h2 style={{ margin:0, fontSize:"27px", fontWeight:700, fontFamily:"'Playfair Display',Georgia,serif", color:"#FAF7F2" }}>{trip.title}</h2>
@@ -860,9 +861,14 @@ function TripCard({ trip, onClick }) {
     <div onClick={() => onClick(trip)} style={{ background:C.white, border:`1px solid ${C.tide}`, borderRadius:"16px", overflow:"hidden", cursor:"pointer", transition:"all .2s", boxShadow:`0 2px 12px rgba(44,62,80,0.07)` }}
       onMouseEnter={e => { e.currentTarget.style.boxShadow=`0 10px 32px rgba(28,43,58,0.15)`; e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.borderColor=C.amber; }}
       onMouseLeave={e => { e.currentTarget.style.boxShadow=`0 2px 12px rgba(44,62,80,0.07)`; e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=C.tide; }}>
-      {/* Image placeholder */}
-      <div style={{ height:"148px", background:grad, position:"relative", display:"flex", alignItems:"flex-end", padding:"14px" }}>
-        <span style={{ fontSize:"42px", position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-60%)", opacity:0.35 }}>{emoji}</span>
+      {/* Image / placeholder */}
+      <div style={{ height:"148px", background:trip.image ? "transparent" : grad, position:"relative", display:"flex", alignItems:"flex-end", padding:"14px", overflow:"hidden" }}>
+        {trip.image
+          ? <img src={trip.image} alt={trip.title} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", objectPosition:"center" }} />
+          : <span style={{ fontSize:"42px", position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-60%)", opacity:0.35 }}>{emoji}</span>
+        }
+        {/* Dark overlay so text stays readable over photos */}
+        {trip.image && <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 60%)" }} />}
         <div style={{ position:"relative", zIndex:1 }}>
           <div style={{ fontSize:"9px", fontWeight:700, letterSpacing:"0.1em", color:"rgba(255,255,255,0.8)", textTransform:"uppercase", marginBottom:"3px" }}>{trip.region}</div>
           <div style={{ fontSize:"16px", fontWeight:700, color:"#FFFFFF", fontFamily:"'Playfair Display',Georgia,serif", lineHeight:1.2, textShadow:"0 1px 4px rgba(0,0,0,0.3)" }}>{trip.title}</div>
@@ -1596,7 +1602,13 @@ function AdminEditModal({ trip, onSave, onClose }) {
             <div><label style={lbl}>Date</label><input style={inp} value={form.date} onChange={e=>updField("date",e.target.value)} /></div>
             <div><label style={lbl}>Travelers</label><input style={inp} value={form.travelers} onChange={e=>updField("travelers",e.target.value)} /></div>
             <div><label style={lbl}>Author</label><input style={inp} value={form.author} onChange={e=>updField("author",e.target.value)} /></div>
+            <div style={{ gridColumn:"1/-1" }}><label style={lbl}>🖼️ Cover Image URL <span style={{ fontWeight:400, color:C.muted }}>(e.g. /victoria-street.jpg or full https:// URL — leave blank for gradient)</span></label><input style={inp} value={form.image||""} onChange={e=>updField("image",e.target.value)} placeholder="/your-photo.jpg or https://..." /></div>
           </div>
+          {form.image && (
+            <div style={{ marginBottom:"14px" }}>
+              <img src={form.image} alt="Cover preview" style={{ width:"100%", height:"140px", objectFit:"cover", borderRadius:"10px", border:`1px solid ${C.tide}` }} onError={e=>e.target.style.display="none"} />
+            </div>
+          )}
           <div style={{ marginBottom:"12px" }}>
             <label style={{...lbl,color:C.green}}>❤️ What They Loved</label>
             <textarea style={{...inp,height:"80px",resize:"vertical"}} value={form.loves} onChange={e=>updField("loves",e.target.value)} />
