@@ -1753,7 +1753,13 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState("All Regions");
   const [tag, setTag] = useState("All");
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isMobile = () => window.innerWidth < 640;
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile());
+  useEffect(() => {
+    const onResize = () => { if (isMobile()) setSidebarOpen(false); };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   // Load from Supabase on mount
   // Expose profile setter for card author clicks
@@ -1827,7 +1833,7 @@ export default function App() {
   ), [trips, search, region, tag]);
 
   return (
-    <div style={{ minHeight:"100vh", background:C.seafoam, fontFamily:"'Nunito',system-ui,sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:C.seafoam, fontFamily:"'Nunito',system-ui,sans-serif", overflowX:"hidden" }}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
       {/* Admin banner */}
@@ -1842,7 +1848,7 @@ export default function App() {
 
       {/* Nav */}
       <nav style={{ background:C.white, borderBottom:`1px solid ${C.tide}`, padding:"0", margin:"0", position:"sticky", top:0, zIndex:100, boxShadow:`0 1px 6px rgba(28,43,58,0.06)` }}>
-        <div style={{ width:"100%", padding:"0 32px", boxSizing:"border-box", display:"flex", alignItems:"center", justifyContent:"space-between", height:"58px" }}>
+        <div style={{ width:"100%", padding:"0 16px", boxSizing:"border-box", display:"flex", alignItems:"center", justifyContent:"space-between", height:"58px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
             <img src="/copycat.svg" alt="TripCopycat" style={{ height:"44px", width:"44px", objectFit:"contain", background:"transparent", display:"block", mixBlendMode:"multiply" }} />
             <span style={{ fontFamily:"'Playfair Display',Georgia,serif", fontWeight:700, fontSize:"22px", color:C.slate, letterSpacing:"-0.01em" }}>TripCopycat<sup style={{ fontSize:"10px", fontWeight:700, verticalAlign:"super", letterSpacing:0 }}>™</sup></span>
@@ -1896,7 +1902,7 @@ export default function App() {
       </div>
 
       {/* Main layout — sidebar + grid */}
-      <div style={{ maxWidth:"100%", padding:"20px 24px", display:"flex", gap:"24px", alignItems:"flex-start" }}>
+      <div style={{ maxWidth:"100%", padding:"20px 16px", display:"flex", gap:"24px", alignItems:"flex-start", boxSizing:"border-box" }}>
 
         {/* Left Sidebar */}
         {sidebarOpen && (
@@ -1973,7 +1979,7 @@ export default function App() {
               <button onClick={() => { setRegion("All Regions"); setTag("All"); }} style={{ fontSize:"11px", color:C.amber, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>Clear filters ×</button>
             )}
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:"18px" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(280px,100%),1fr))", gap:"18px" }}>
             {filtered.map(trip => (
               <div key={trip.id} style={{ position:"relative" }}>
                 <TripCard trip={trip} onClick={setSelected} />
