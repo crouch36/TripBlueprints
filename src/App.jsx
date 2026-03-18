@@ -1758,7 +1758,7 @@ export default function App() {
       <nav style={{ background:C.white, borderBottom:`1px solid ${C.tide}`, padding:"0", margin:"0", position:"sticky", top:0, zIndex:100, boxShadow:`0 1px 6px rgba(28,43,58,0.06)` }}>
         <div style={{ width:"100%", padding:"0 32px", boxSizing:"border-box", display:"flex", alignItems:"center", justifyContent:"space-between", height:"58px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-            <img src="/copycat.png" alt="TripCopycat" style={{ height:"44px", width:"44px", objectFit:"contain", background:"transparent", display:"block" }} />
+            <img src="/copycat.svg" alt="TripCopycat" style={{ height:"44px", width:"44px", objectFit:"contain", background:"transparent", display:"block" }} />
             <span style={{ fontFamily:"'Playfair Display',Georgia,serif", fontWeight:700, fontSize:"22px", color:C.slate, letterSpacing:"-0.01em" }}>TripCopycat</span>
             <span style={{ fontSize:"9px", background:C.seafoamDeep, color:C.azureDeep, fontWeight:700, padding:"2px 7px", borderRadius:"20px", border:`1px solid ${C.tide}` }}>beta</span>
           </div>
