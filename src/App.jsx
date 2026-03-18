@@ -1802,7 +1802,7 @@ export default function App() {
         <div style={{ position:"relative", maxWidth:"680px", margin:"0 auto" }}>
 
           <h1 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:"clamp(36px,6vw,62px)", fontWeight:700, color:C.slate, margin:"0 0 20px", lineHeight:1.1, letterSpacing:"-0.01em" }}>
-            Planned by them.<br/>Perfected by you.
+            Planned by others.<br/>Perfected by you.
           </h1>
           <p style={{ fontSize:"clamp(14px,2vw,17px)", color:C.slateLight, margin:"0 0 32px", maxWidth:"580px", marginLeft:"auto", marginRight:"auto", fontWeight:400, lineHeight:1.75 }}>
             The ultimate cheat code for your next vacation. We crowd-source highly detailed, recreatable trip itineraries so you don't have to reinvent the wheel. Steal the logistics, duplicate the route, or customize and make it your own — spend your time looking forward to the destination.
@@ -1833,18 +1833,14 @@ export default function App() {
               <span>Hide sidebar</span><span>←</span>
             </button>
 
-            {/* Stats */}
+            {/* Trip type filter */}
             <div style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, padding:"14px 16px", marginBottom:"14px", boxShadow:`0 1px 4px rgba(44,62,80,0.05)` }}>
-              <div style={{ fontSize:"10px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"10px" }}>Platform</div>
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"6px" }}>
-                <span style={{ fontSize:"12px", color:C.slateLight }}>Itineraries</span>
-                <strong style={{ fontSize:"12px", color:C.slate }}>{allTrips.length}</strong>
+              <div style={{ fontSize:"10px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"10px" }}>Trip Type</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:"5px" }}>
+                {TAGS.map(t => (
+                  <button key={t} onClick={() => setTag(t)} style={{ padding:"3px 9px", borderRadius:"20px", border:`1px solid ${tag===t?C.slate:C.tide}`, background:tag===t?C.slate:C.white, color:tag===t?C.white:C.slateLight, fontSize:"10px", fontWeight:600, cursor:"pointer", transition:"all .12s" }}>{t}</button>
+                ))}
               </div>
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"14px" }}>
-                <span style={{ fontSize:"12px", color:C.slateLight }}>Contributors</span>
-                <strong style={{ fontSize:"12px", color:C.slate }}>{[...new Set(allTrips.map(t=>t.author))].length}</strong>
-              </div>
-              <button onClick={() => setShowSubmit(true)} style={{ width:"100%", padding:"9px", borderRadius:"8px", border:"none", background:C.cta, color:C.ctaText, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>+ Submit a Trip</button>
             </div>
 
             {/* Region filter */}
@@ -1857,19 +1853,8 @@ export default function App() {
               ))}
             </div>
 
-            {/* Trip type filter */}
-            <div style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, padding:"14px 16px", marginBottom:"14px", boxShadow:`0 1px 4px rgba(44,62,80,0.05)` }}>
-              <div style={{ fontSize:"10px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"10px" }}>Trip Type</div>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:"5px" }}>
-                {TAGS.map(t => (
-                  <button key={t} onClick={() => setTag(t)} style={{ padding:"3px 9px", borderRadius:"20px", border:`1px solid ${tag===t?C.slate:C.tide}`, background:tag===t?C.slate:C.white, color:tag===t?C.white:C.slateLight, fontSize:"10px", fontWeight:600, cursor:"pointer", transition:"all .12s" }}>{t}</button>
-                ))}
-              </div>
-            </div>
-
-
             {/* Top contributors */}
-            <div style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, padding:"14px 16px", boxShadow:`0 1px 4px rgba(44,62,80,0.05)` }}>
+            <div style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, padding:"14px 16px", marginBottom:"14px", boxShadow:`0 1px 4px rgba(44,62,80,0.05)` }}>
               <div style={{ fontSize:"10px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"10px" }}>Top Contributors</div>
               {[...allTrips.reduce((acc, t) => { acc.set(t.author, (acc.get(t.author)||0)+1); return acc; }, new Map())].sort((a,b)=>b[1]-a[1]).slice(0,5).map(([author, count]) => (
                 <div key={author} onClick={() => setViewingProfile(author)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0", cursor:"pointer", borderBottom:`1px solid ${C.seafoamDeep}` }}
@@ -1882,6 +1867,20 @@ export default function App() {
                   <span style={{ fontSize:"10px", color:C.muted }}>{count} trip{count!==1?"s":""}</span>
                 </div>
               ))}
+            </div>
+
+            {/* Stats */}
+            <div style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, padding:"14px 16px", boxShadow:`0 1px 4px rgba(44,62,80,0.05)` }}>
+              <div style={{ fontSize:"10px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"10px" }}>Platform</div>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"6px" }}>
+                <span style={{ fontSize:"12px", color:C.slateLight }}>Itineraries</span>
+                <strong style={{ fontSize:"12px", color:C.slate }}>{allTrips.length}</strong>
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"14px" }}>
+                <span style={{ fontSize:"12px", color:C.slateLight }}>Contributors</span>
+                <strong style={{ fontSize:"12px", color:C.slate }}>{[...new Set(allTrips.map(t=>t.author))].length}</strong>
+              </div>
+              <button onClick={() => setShowSubmit(true)} style={{ width:"100%", padding:"9px", borderRadius:"8px", border:"none", background:C.cta, color:C.ctaText, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>+ Submit a Trip</button>
             </div>
           </aside>
         )}
