@@ -735,9 +735,9 @@ function TripModal({ trip, onClose }) {
             {trip.image && <img src={trip.image} alt={trip.title} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", objectPosition:"center", opacity:0.35 }} />}
             <div style={{ position:"relative", zIndex:1, display:"flex", justifyContent:"space-between" }}>
               <div>
-                <div style={{ fontSize:"10px", fontWeight:700, letterSpacing:"0.1em", color:"rgba(196,168,130,0.9)", textTransform:"uppercase", marginBottom:"7px" }}>{trip.region} · {trip.duration} · {trip.date}</div>
-                <h2 style={{ margin:0, fontSize:"27px", fontWeight:700, fontFamily:"'Playfair Display',Georgia,serif", color:"#FAF7F2" }}>{trip.title}</h2>
-                <div style={{ marginTop:"4px", fontSize:"14px", color:"rgba(250,247,242,0.75)" }}>{trip.destination}</div>
+                <div style={{ fontSize:"10px", fontWeight:800, letterSpacing:"0.1em", color:"rgba(255,255,255,0.95)", textTransform:"uppercase", marginBottom:"7px", textShadow:"0 1px 4px rgba(0,0,0,0.5)" }}>{trip.region} · {trip.duration} · {trip.date}</div>
+                <h2 style={{ margin:0, fontSize:"27px", fontWeight:700, fontFamily:"'Playfair Display',Georgia,serif", color:"#FFFFFF", textShadow:"0 2px 8px rgba(0,0,0,0.5)" }}>{trip.title}</h2>
+                <div style={{ marginTop:"4px", fontSize:"14px", color:"rgba(255,255,255,0.95)", fontWeight:500, textShadow:"0 1px 4px rgba(0,0,0,0.5)" }}>{trip.destination}</div>
               </div>
               <div style={{ display:"flex", gap:"7px", alignItems:"flex-start" }}>
                 <button onClick={() => setShowExport(true)} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 13px", cursor:"pointer", fontSize:"12px", fontWeight:700 }}>📤 Export</button>
@@ -745,9 +745,9 @@ function TripModal({ trip, onClose }) {
               </div>
             </div>
             <div style={{ marginTop:"12px", display:"flex", gap:"10px", flexWrap:"wrap", alignItems:"center" }}>
-              <span style={{ fontSize:"12px", color:"rgba(250,247,242,0.8)" }}>by <strong>{trip.author}</strong></span>
-              <span style={{ fontSize:"12px", color:"rgba(250,247,242,0.8)" }}>{trip.travelers}</span>
-              {trip.tags.map(t => <span key={t} style={{ fontSize:"10px", fontWeight:600, padding:"2px 9px", borderRadius:"20px", background:"rgba(196,168,130,0.25)", color:"#FAF7F2", border:"1px solid rgba(196,168,130,0.3)" }}>{t}</span>)}
+              <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.95)", fontWeight:500, textShadow:"0 1px 3px rgba(0,0,0,0.4)" }}>by <strong>{trip.author}</strong></span>
+              <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.95)", fontWeight:500, textShadow:"0 1px 3px rgba(0,0,0,0.4)" }}>{trip.travelers}</span>
+              {trip.tags.map(t => <span key={t} style={{ fontSize:"10px", fontWeight:700, padding:"2px 9px", borderRadius:"20px", background:"rgba(0,0,0,0.3)", color:"#FFFFFF", border:"1px solid rgba(255,255,255,0.4)" }}>{t}</span>)}
             </div>
           </div>
 
@@ -761,11 +761,11 @@ function TripModal({ trip, onClose }) {
           {view === "overview" && (
             <div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderBottom:`1px solid ${C.tide}` }}>
-                <div style={{ padding:"20px 24px", borderRight:`1px solid ${C.tide}`, background:C.greenBg }}>
+                <div style={{ padding:"20px 24px", borderRight:`1px solid ${C.tide}`, background:C.white }}>
                   <div style={{ fontSize:"10px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.green, marginBottom:"8px" }}>❤️ What They Loved</div>
                   <p style={{ margin:0, fontSize:"13px", color:C.slate, lineHeight:1.75, fontWeight:500 }}>{trip.loves}</p>
                 </div>
-                <div style={{ padding:"20px 24px", background:C.amberBg }}>
+                <div style={{ padding:"20px 24px", background:C.white }}>
                   <div style={{ fontSize:"10px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.amber, marginBottom:"8px" }}>🔄 Do Differently</div>
                   <p style={{ margin:0, fontSize:"13px", color:C.slate, lineHeight:1.75, fontWeight:500 }}>{trip.doNext}</p>
                 </div>
