@@ -1755,10 +1755,10 @@ export default function App() {
       )}
 
       {/* Nav */}
-      <nav style={{ background:C.white, borderBottom:`1px solid ${C.tide}`, padding:"0 24px", position:"sticky", top:0, zIndex:100, boxShadow:`0 1px 6px rgba(28,43,58,0.06)` }}>
-        <div style={{ maxWidth:"100%", padding:"0 32px", margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"space-between", height:"58px" }}>
+      <nav style={{ background:C.white, borderBottom:`1px solid ${C.tide}`, padding:"0", margin:"0", position:"sticky", top:0, zIndex:100, boxShadow:`0 1px 6px rgba(28,43,58,0.06)` }}>
+        <div style={{ width:"100%", padding:"0 32px", boxSizing:"border-box", display:"flex", alignItems:"center", justifyContent:"space-between", height:"58px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-            <img src="/copycat.png" alt="TripCopycat" style={{ height:"44px", width:"44px", objectFit:"contain" }} />
+            <img src="/copycat.png" alt="TripCopycat" style={{ height:"44px", width:"44px", objectFit:"contain", background:"transparent", display:"block" }} />
             <span style={{ fontFamily:"'Playfair Display',Georgia,serif", fontWeight:700, fontSize:"22px", color:C.slate, letterSpacing:"-0.01em" }}>TripCopycat</span>
             <span style={{ fontSize:"9px", background:C.seafoamDeep, color:C.azureDeep, fontWeight:700, padding:"2px 7px", borderRadius:"20px", border:`1px solid ${C.tide}` }}>beta</span>
           </div>
@@ -1783,7 +1783,7 @@ export default function App() {
       </nav>
 
       {/* Hero — Warm Nomad */}
-      <div style={{ background:C.seafoam, padding:"40px 24px 36px", textAlign:"center", position:"relative", overflow:"hidden", borderBottom:`1px solid ${C.tide}` }}>
+      <div style={{ background:C.seafoam, padding:"40px 0 36px", margin:"0", textAlign:"center", position:"relative", overflow:"hidden", borderBottom:`1px solid ${C.tide}` }}>
         {/* subtle texture overlay */}
         <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle at 20% 50%, rgba(196,168,130,0.08) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(193,105,42,0.06) 0%, transparent 50%)", pointerEvents:"none" }} />
         <div style={{ position:"relative", maxWidth:"680px", margin:"0 auto" }}>
@@ -1810,7 +1810,7 @@ export default function App() {
       </div>
 
       {/* Main layout — sidebar + grid */}
-      <div style={{ maxWidth:"100%", padding:"20px 32px", display:"flex", gap:"24px", alignItems:"flex-start" }}>
+      <div style={{ maxWidth:"100%", padding:"20px 24px", display:"flex", gap:"24px", alignItems:"flex-start" }}>
 
         {/* Left Sidebar */}
         {sidebarOpen && (
