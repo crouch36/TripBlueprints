@@ -761,13 +761,13 @@ function TripModal({ trip, onClose }) {
           {view === "overview" && (
             <div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", borderBottom:`1px solid ${C.tide}` }}>
-                <div style={{ padding:"18px 24px", borderRight:`1px solid ${C.tide}` }}>
-                  <div style={{ fontSize:"10px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.green, marginBottom:"6px" }}>❤️ What They Loved</div>
-                  <p style={{ margin:0, fontSize:"13px", color:C.slateMid, lineHeight:1.7 }}>{trip.loves}</p>
+                <div style={{ padding:"20px 24px", borderRight:`1px solid ${C.tide}`, background:C.greenBg }}>
+                  <div style={{ fontSize:"10px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.green, marginBottom:"8px" }}>❤️ What They Loved</div>
+                  <p style={{ margin:0, fontSize:"13px", color:C.slate, lineHeight:1.75, fontWeight:500 }}>{trip.loves}</p>
                 </div>
-                <div style={{ padding:"18px 24px" }}>
-                  <div style={{ fontSize:"10px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.amber, marginBottom:"6px" }}>🔄 Do Differently</div>
-                  <p style={{ margin:0, fontSize:"13px", color:C.slateMid, lineHeight:1.7 }}>{trip.doNext}</p>
+                <div style={{ padding:"20px 24px", background:C.amberBg }}>
+                  <div style={{ fontSize:"10px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", color:C.amber, marginBottom:"8px" }}>🔄 Do Differently</div>
+                  <p style={{ margin:0, fontSize:"13px", color:C.slate, lineHeight:1.75, fontWeight:500 }}>{trip.doNext}</p>
                 </div>
               </div>
               <div style={{ padding:"20px 24px", background:C.white }}>
@@ -818,7 +818,7 @@ function TripModal({ trip, onClose }) {
                       <tbody>{trip[key].map((it,i) => (
                         <tr key={i} style={{ borderBottom:`1px solid ${C.seafoamDeep}` }}>
                           <td style={{ padding:"9px 11px", fontWeight:600, color:C.slate }}>{it.item}</td>
-                          <td style={{ padding:"9px 11px", color:C.slateLight }}>{it.detail}</td>
+                          <td style={{ padding:"9px 11px", color:C.slate }}>{it.detail}</td>
                           <td style={{ padding:"9px 11px", color:C.slateMid, fontStyle:"italic" }}>{it.tip}</td>
                         </tr>
                       ))}</tbody>
