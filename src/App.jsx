@@ -143,7 +143,7 @@ const SAMPLE_TRIPS = [
     ]
   },
   {
-    id: 2, title: "Ireland Guys Trip — Galway & Dublin", destination: "Galway & Dublin, Ireland", region: "Europe", image: "/bowes.jpg",
+    id: 2, title: "Ireland Guys Trip — Galway & Dublin", destination: "Galway & Dublin, Ireland", region: "Europe", image: "/bowes.webp",
     author: "Andrew M.", date: "2025", duration: "4 days", travelers: "Guys trip",
     tags: ["food & wine", "culture", "adventure"],
     loves: "Sean's Bar is a mandatory stop — opens at 10:30am and there is no better way to start an Ireland trip. Bowe's consistently pours the best pint in Dublin. The trad session at the Crane Bar in Galway is the real thing. Mister S for dinner in Dublin is outstanding — book well ahead. Universal Bar in Galway exceeded all expectations. Stonybatter pub crawl is the highlight of Dublin.",
@@ -1896,7 +1896,7 @@ export default function App() {
         {/* Main content */}
         <main id="trip-grid" style={{ flex:1, minWidth:0 }}>
           <div style={{ marginBottom:"14px", fontSize:"12px", color:C.muted, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-            <span><strong style={{ color:C.slate }}>{filtered.length}</strong> itinerary{filtered.length!==1?"ies":"y"}{search&&<> for "<strong style={{ color:C.slate }}>{search}</strong>"</>}</span>
+            <span><strong style={{ color:C.slate }}>{filtered.length}</strong> itinerar{filtered.length!==1?"ies":"y"}{search&&<> for "<strong style={{ color:C.slate }}>{search}</strong>"</>}</span>
             {(region !== "All Regions" || tag !== "All") && (
               <button onClick={() => { setRegion("All Regions"); setTag("All"); }} style={{ fontSize:"11px", color:C.amber, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>Clear filters ×</button>
             )}
