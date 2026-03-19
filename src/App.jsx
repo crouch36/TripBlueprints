@@ -1043,6 +1043,7 @@ function SubmitTripModal({ onClose, currentUser, displayName }) {
   const [filterResult, setFilterResult] = useState(null);
   const [submitterName, setSubmitterName] = useState(displayName || "");
   const [submitterEmail, setSubmitterEmail] = useState(currentUser?.email || "");
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [coverPhoto, setCoverPhoto] = useState(null);
   const [coverPhotoPreview, setCoverPhotoPreview] = useState(null);
