@@ -721,10 +721,26 @@ function DailyItinerary({ days }) {
 
 // ── Trip Modal ────────────────────────────────────────────────────────────────
 
-function TripModal({ trip, onClose }) {
+function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
   const [view, setView] = useState("overview");
   const [tab, setTab] = useState("all");
   const [showExport, setShowExport] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const related = (allTrips || []).filter(t =>
+    t.id !== trip.id && (t.region === trip.region || t.author === trip.author)
+  ).slice(0, 3);
+
+  const handleShare = () => {
+    const url = `${window.location.origin}/#trip/${trip.id}`;
+    navigator.clipboard.writeText(url).then(() => { setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); });
+  };
+
+  const handleTwitterShare = () => {
+    const url = `${window.location.origin}/#trip/${trip.id}`;
+    const text = `Check out this trip: ${trip.title} on TripCopycat`;
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
+  };
 
   return (
     <>
@@ -742,6 +758,9 @@ function TripModal({ trip, onClose }) {
                 <div style={{ marginTop:"4px", fontSize:"14px", color:"rgba(255,255,255,0.95)", fontWeight:500, textShadow:"0 1px 4px rgba(0,0,0,0.5)" }}>{trip.destination}</div>
               </div>
               <div style={{ display:"flex", gap:"7px", alignItems:"flex-start" }}>
+                <button onClick={handleShare} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 13px", cursor:"pointer", fontSize:"12px", fontWeight:700 }}>{shareCopied ? "✓ Copied!" : "🔗 Share"}</button>
+                <button onClick={handleTwitterShare} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 13px", cursor:"pointer", fontSize:"12px", fontWeight:700 }}>𝕏</button>
+                <button onClick={() => onBookmark && onBookmark(trip.id)} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 13px", cursor:"pointer", fontSize:"12px", fontWeight:700 }} title={isBookmarked ? "Remove bookmark" : "Bookmark"}>{isBookmarked ? "🔖 Saved" : "🏷️ Save"}</button>
                 <button onClick={() => setShowExport(true)} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 13px", cursor:"pointer", fontSize:"12px", fontWeight:700 }}>📤 Export</button>
                 <button onClick={onClose} style={{ background:"rgba(196,168,130,0.2)", border:"none", color:"#FAF7F2", borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>×</button>
               </div>
@@ -832,6 +851,31 @@ function TripModal({ trip, onClose }) {
           )}
         </div>
       </div>
+      {/* Related trips */}
+      {related.length > 0 && (
+        <div style={{ padding:"20px 28px", borderTop:`1px solid ${C.tide}`, background:C.seafoam }}>
+          <div style={{ fontSize:"11px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"14px" }}>You Might Also Like</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(200px,100%),1fr))", gap:"12px" }}>
+            {related.map(t => {
+              const grad = REGION_GRADIENTS[t.region] || "linear-gradient(135deg,#8B7355,#C4A882)";
+              return (
+                <div key={t.id} onClick={() => { onClose(); setTimeout(() => window.__openTrip && window.__openTrip(t), 100); }} style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, overflow:"hidden", cursor:"pointer", transition:"all .15s" }}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor=C.amber}
+                  onMouseLeave={e=>e.currentTarget.style.borderColor=C.tide}>
+                  <div style={{ height:"70px", background:t.image?"transparent":grad, position:"relative", overflow:"hidden" }}>
+                    {t.image && <img src={t.image} alt={t.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} />}
+                    {t.image && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.2)" }} />}
+                  </div>
+                  <div style={{ padding:"9px 11px" }}>
+                    <div style={{ fontSize:"11px", fontWeight:700, color:C.slate, lineHeight:1.3, marginBottom:"3px" }}>{t.title}</div>
+                    <div style={{ fontSize:"10px", color:C.muted }}>{t.destination} · {t.duration}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {showExport && <ExportModal trip={trip} onClose={() => setShowExport(false)} />}
     </>
   );
@@ -854,9 +898,41 @@ const REGION_EMOJI = {
   "Africa":"🦁", "Oceania":"🐚",
 };
 
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+const DURATION_FILTERS = ["Any Length", "Weekend (1-3 days)", "1 Week (4-7 days)", "2 Weeks (8-14 days)", "2+ Weeks (15+ days)"];
+
+function matchesDuration(trip, filter) {
+  if (filter === "Any Length") return true;
+  const n = parseInt(trip.duration) || 0;
+  if (filter === "Weekend (1-3 days)") return n >= 1 && n <= 3;
+  if (filter === "1 Week (4-7 days)") return n >= 4 && n <= 7;
+  if (filter === "2 Weeks (8-14 days)") return n >= 8 && n <= 14;
+  if (filter === "2+ Weeks (15+ days)") return n >= 15;
+  return true;
+}
+
+function slugify(title) {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function useBookmarks() {
+  const [bookmarks, setBookmarks] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("tc_bookmarks") || "[]"); } catch { return []; }
+  });
+  const toggle = (id) => {
+    setBookmarks(prev => {
+      const next = prev.includes(id) ? prev.filter(b => b !== id) : [...prev, id];
+      localStorage.setItem("tc_bookmarks", JSON.stringify(next));
+      return next;
+    });
+  };
+  return { bookmarks, toggle };
+}
+
 // ── Trip Card ─────────────────────────────────────────────────────────────────
 
-function TripCard({ trip, onClick }) {
+function TripCard({ trip, onClick, isBookmarked, onBookmark }) {
   const grad = REGION_GRADIENTS[trip.region] || "linear-gradient(135deg,#8B7355,#C4A882)";
   const emoji = REGION_EMOJI[trip.region] || "🌍";
   return (
@@ -869,13 +945,17 @@ function TripCard({ trip, onClick }) {
           ? <img src={trip.image} alt={trip.title} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", objectPosition:"center" }} />
           : <span style={{ fontSize:"42px", position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-60%)", opacity:0.35 }}>{emoji}</span>
         }
-        {/* Dark overlay so text stays readable over photos */}
         {trip.image && <div style={{ position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 60%)" }} />}
         <div style={{ position:"relative", zIndex:1 }}>
           <div style={{ fontSize:"9px", fontWeight:700, letterSpacing:"0.1em", color:"rgba(255,255,255,0.8)", textTransform:"uppercase", marginBottom:"3px" }}>{trip.region}</div>
           <div style={{ fontSize:"16px", fontWeight:700, color:"#FFFFFF", fontFamily:"'Playfair Display',Georgia,serif", lineHeight:1.2, textShadow:"0 1px 4px rgba(0,0,0,0.3)" }}>{trip.title}</div>
         </div>
         <div style={{ position:"absolute", top:"12px", right:"12px", background:"rgba(0,0,0,0.25)", borderRadius:"20px", padding:"3px 10px", fontSize:"10px", color:"rgba(255,255,255,0.9)", fontWeight:600 }}>{trip.duration}</div>
+        {/* Bookmark button */}
+        <button onClick={e => { e.stopPropagation(); onBookmark && onBookmark(trip.id); }} style={{ position:"absolute", top:"10px", left:"12px", background:"rgba(0,0,0,0.3)", border:"none", borderRadius:"50%", width:"28px", height:"28px", cursor:"pointer", fontSize:"14px", display:"flex", alignItems:"center", justifyContent:"center", transition:"all .15s" }}
+          title={isBookmarked ? "Remove bookmark" : "Bookmark this trip"}>
+          {isBookmarked ? "🔖" : "🏷️"}
+        </button>
       </div>
       {/* Card body */}
       <div style={{ padding:"16px 18px" }}>
@@ -1977,6 +2057,8 @@ export default function App() {
   const [region, setRegion] = useState("All Regions");
   const [tag, setTag] = useState("All");
   const [sortBy, setSortBy] = useState("default");
+  const [duration, setDuration] = useState("Any Length");
+  const { bookmarks, toggle: toggleBookmark } = useBookmarks();
   const isMobile = () => window.innerWidth < 640;
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile());
   useEffect(() => {
@@ -2011,6 +2093,22 @@ export default function App() {
   };
 
   useEffect(() => { fetchTrips(); }, []);
+
+  // URL hash routing for individual trips
+  useEffect(() => {
+    window.__openTrip = (trip) => setSelected(trip);
+    const handleHash = () => {
+      const hash = window.location.hash;
+      const m = hash.match(/#trip\/(.+)/);
+      if (m && allTrips.length > 0) {
+        const found = allTrips.find(t => t.id === m[1] || slugify(t.title) === m[1]);
+        if (found) setSelected(found);
+      }
+    };
+    window.addEventListener("hashchange", handleHash);
+    handleHash();
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, [allTrips]);
 
   const allTrips = [...dbTrips, ...trips];
 
@@ -2056,7 +2154,8 @@ export default function App() {
   const [editingTrip, setEditingTrip] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const handleAdminLogin = () => { setIsAdmin(true); setShowAdminLogin(false); };
+  const openTrip = (trip) => { setSelected(trip); window.history.pushState(null, "", `#trip/${trip.id}`); };
+  const closeTrip = () => { setSelected(null); window.history.pushState(null, "", window.location.pathname); };
   const handleSaveTrip = async (updated) => {
     await supabase.from("trips").update({
       title: updated.title, destination: updated.destination, region: updated.region,
@@ -2081,13 +2180,15 @@ export default function App() {
     const f = allTrips.filter(t =>
       (!search || [t.title,t.destination,t.travelers,t.loves].some(s=>s.toLowerCase().includes(search.toLowerCase()))) &&
       (region==="All Regions"||t.region===region) &&
-      (tag==="All"||t.tags.includes(tag))
+      (tag==="All"||tag==="__bookmarks__"?true:t.tags.includes(tag)) &&
+      (tag!=="__bookmarks__"||bookmarks.includes(t.id)) &&
+      matchesDuration(t, duration)
     );
     if (sortBy === "submitter") f.sort((a,b) => a.author.localeCompare(b.author));
     else if (sortBy === "destination") f.sort((a,b) => a.destination.localeCompare(b.destination));
     else if (sortBy === "duration") f.sort((a,b) => parseInt(a.duration)||0 - (parseInt(b.duration)||0));
     return f;
-  }, [dbTrips, trips, search, region, tag, sortBy]);
+  }, [dbTrips, trips, search, region, tag, sortBy, duration, bookmarks]);
 
   return (
     <div style={{ minHeight:"100vh", background:C.seafoam, fontFamily:"'Nunito',system-ui,sans-serif", overflowX:"hidden" }}>
@@ -2207,6 +2308,16 @@ export default function App() {
               ))}
             </div>
 
+            {/* Duration filter */}
+            <div style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, padding:"14px 16px", marginBottom:"14px", boxShadow:`0 1px 4px rgba(44,62,80,0.05)` }}>
+              <div style={{ fontSize:"10px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"10px" }}>Trip Length</div>
+              {DURATION_FILTERS.map(d => (
+                <button key={d} onClick={() => setDuration(d)} style={{ display:"block", width:"100%", textAlign:"left", padding:"6px 10px", borderRadius:"7px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:duration===d?700:400, background:duration===d?C.sandDeep:"transparent", color:duration===d?C.slate:C.slateLight, marginBottom:"2px", transition:"all .12s" }}>
+                  {duration===d && <span style={{ color:C.amber, marginRight:"5px" }}>▸</span>}{d}
+                </button>
+              ))}
+            </div>
+
             {/* Top contributors */}
             <div style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, padding:"14px 16px", marginBottom:"14px", boxShadow:`0 1px 4px rgba(44,62,80,0.05)` }}>
               <div style={{ fontSize:"10px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"10px" }}>Top Contributors</div>
@@ -2248,11 +2359,20 @@ export default function App() {
 
         {/* Main content */}
         <main id="trip-grid" style={{ flex:1, minWidth:0 }}>
+          {/* Bookmarks bar */}
+          {bookmarks.length > 0 && (
+            <div style={{ marginBottom:"12px", display:"flex", alignItems:"center", gap:"8px" }}>
+              <button onClick={() => setTag("__bookmarks__")} style={{ padding:"4px 12px", borderRadius:"20px", border:`1px solid ${tag==="__bookmarks__"?C.amber:C.tide}`, background:tag==="__bookmarks__"?C.amberBg:C.white, color:tag==="__bookmarks__"?C.amber:C.slateLight, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>
+                🔖 My Saved Trips ({bookmarks.length})
+              </button>
+              {tag==="__bookmarks__" && <button onClick={() => setTag("All")} style={{ fontSize:"11px", color:C.muted, background:"none", border:"none", cursor:"pointer" }}>× Clear</button>}
+            </div>
+          )}
           <div style={{ marginBottom:"14px", fontSize:"12px", color:C.muted, display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"8px" }}>
             <span><strong style={{ color:C.slate }}>{filtered.length}</strong> itinerar{filtered.length!==1?"ies":"y"}{search&&<> for "<strong style={{ color:C.slate }}>{search}</strong>"</>}</span>
             <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-              {(region !== "All Regions" || tag !== "All") && (
-                <button onClick={() => { setRegion("All Regions"); setTag("All"); }} style={{ fontSize:"11px", color:C.amber, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>Clear filters ×</button>
+              {(region !== "All Regions" || tag !== "All" || duration !== "Any Length") && (
+                <button onClick={() => { setRegion("All Regions"); setTag("All"); setDuration("Any Length"); }} style={{ fontSize:"11px", color:C.amber, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>Clear filters ×</button>
               )}
               <div style={{ display:"flex", alignItems:"center", gap:"5px" }}>
                 <span style={{ fontSize:"11px", color:C.muted }}>Sort:</span>
@@ -2268,7 +2388,7 @@ export default function App() {
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(280px,100%),1fr))", gap:"18px" }}>
             {filtered.map(trip => (
               <div key={trip.id} style={{ position:"relative" }}>
-                <TripCard trip={trip} onClick={setSelected} />
+                <TripCard trip={trip} onClick={openTrip} isBookmarked={bookmarks.includes(trip.id)} onBookmark={toggleBookmark} />
                 {isAdmin && (
                   <div style={{ position:"absolute", top:"12px", right:"12px", display:"flex", gap:"6px", zIndex:10 }}>
                     <button onClick={e => { e.stopPropagation(); setEditingTrip(trip); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:C.azure, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>✏️</button>
@@ -2308,12 +2428,12 @@ export default function App() {
         </div>
       )}
 
-      {selected      && <TripModal trip={selected} onClose={() => setSelected(null)} />}
+      {selected      && <TripModal trip={selected} onClose={closeTrip} allTrips={allTrips} isBookmarked={bookmarks.includes(selected.id)} onBookmark={toggleBookmark} />}
       {showAdd       && <AddTripModal onClose={() => setShowAdd(false)} onAdd={t => setTrips(p=>[t,...p])} />}
       {showImport    && <SmartImportHub onClose={() => setShowImport(false)} />}
       {showSubmit    && <SubmitTripModal onClose={() => setShowSubmit(false)} currentUser={currentUser} displayName={currentDisplayName} onSubmitSuccess={fetchTrips} />}
       {showAuth      && <AuthModal onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} />}
-      {viewingProfile && <ProfilePage authorName={viewingProfile} allTrips={allTrips} onClose={() => setViewingProfile(null)} onTripClick={setSelected} />}
+      {viewingProfile && <ProfilePage authorName={viewingProfile} allTrips={allTrips} onClose={() => setViewingProfile(null)} onTripClick={openTrip} />}
       {showQueue     && <AdminQueueModal onClose={() => setShowQueue(false)} onApprove={fetchTrips} />}
       {showAdminLogin && <AdminLoginModal onSuccess={handleAdminLogin} onClose={() => setShowAdminLogin(false)} />}
       {editingTrip   && <AdminEditModal trip={editingTrip} onSave={handleSaveTrip} onClose={() => setEditingTrip(null)} />}
