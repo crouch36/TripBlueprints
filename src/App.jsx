@@ -241,6 +241,7 @@ const REGION_EMOJI = {
   "Central America":"🌴", "South America":"🌿",
   "Africa":"🦁", "Oceania":"🐚",
 };
+const DURATION_FILTERS = ["Any Length", "Weekend (1-3 days)", "1 Week (4-7 days)", "2 Weeks (8-14 days)", "2+ Weeks (15+ days)"];
 const ADMIN_PASSWORDS = ["Guinness"];
 // ── AI Prompt Generator ───────────────────────────────────────────────────────
 const AI_SUBMISSION_PROMPT = `You are helping me document a trip I took so I can share it on TripCopycat.
@@ -710,8 +711,6 @@ function SmartImportHub({ onClose }) {
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
-
-const DURATION_FILTERS = ["Any Length", "Weekend (1-3 days)", "1 Week (4-7 days)", "2 Weeks (8-14 days)", "2+ Weeks (15+ days)"];
 
 function matchesDuration(trip, filter) {
   if (filter === "Any Length") return true;
