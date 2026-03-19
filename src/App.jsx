@@ -1398,7 +1398,7 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess })
 }
 
 // ── Admin Queue Modal ─────────────────────────────────────────────────────────
-function AdminQueueModal({ onClose }) {
+function AdminQueueModal({ onClose, onApprove }) {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState(null);
@@ -1414,13 +1414,14 @@ function AdminQueueModal({ onClose }) {
       title:t.title, destination:t.destination, region:t.region,
       author_name:sub.submitter_name, author_email:sub.submitter_email,
       date:t.date, duration:t.duration, travelers:t.travelers,
-      tags:t.tags||[], loves:t.loves, do_next:t.doNext,
+      tags:t.tags||[], loves:t.loves, do_next:t.do_next||t.doNext||"",
       airfare:t.airfare||[], hotels:t.hotels||[], restaurants:t.restaurants||[],
       bars:t.bars||[], activities:t.activities||[], days:t.days||[],
       image:t.image||"", status:"published"
     }]);
     await supabase.from("submissions").update({ status:"approved", reviewed_at:new Date().toISOString() }).eq("id",sub.id);
     setSubmissions(p => p.map(s => s.id===sub.id ? {...s,status:"approved"} : s));
+    if (onApprove) onApprove();
     setDetail(null);
   };
 
@@ -1993,8 +1994,7 @@ export default function App() {
     setTripsLoading(true);
     supabase.from("trips").select("*").eq("status","published").order("created_at", { ascending: false })
       .then(({ data, error }) => {
-        console.log("fetchTrips result:", { data, error, count: data?.length });
-        if (error) { console.error("Supabase fetch error:", error); }
+        if (error) console.error("Supabase fetch error:", error);
         if (data?.length > 0) {
           const mapped = data.map(t => ({
             id:t.id, title:t.title, destination:t.destination, region:t.region,
@@ -2004,7 +2004,6 @@ export default function App() {
             bars:t.bars||[], activities:t.activities||[], days:t.days||[],
             image:t.image||""
           }));
-          console.log("mapped trips:", mapped.length);
           setDbTrips(mapped);
         }
         setTripsLoading(false);
@@ -2043,6 +2042,7 @@ export default function App() {
     await supabase.auth.signOut();
     setCurrentUser(null);
     setCurrentDisplayName("");
+    setViewingProfile(null);
   };
 
   // Admin state
@@ -2314,7 +2314,7 @@ export default function App() {
       {showSubmit    && <SubmitTripModal onClose={() => setShowSubmit(false)} currentUser={currentUser} displayName={currentDisplayName} onSubmitSuccess={fetchTrips} />}
       {showAuth      && <AuthModal onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} />}
       {viewingProfile && <ProfilePage authorName={viewingProfile} allTrips={allTrips} onClose={() => setViewingProfile(null)} onTripClick={setSelected} />}
-      {showQueue     && <AdminQueueModal onClose={() => setShowQueue(false)} />}
+      {showQueue     && <AdminQueueModal onClose={() => setShowQueue(false)} onApprove={fetchTrips} />}
       {showAdminLogin && <AdminLoginModal onSuccess={handleAdminLogin} onClose={() => setShowAdminLogin(false)} />}
       {editingTrip   && <AdminEditModal trip={editingTrip} onSave={handleSaveTrip} onClose={() => setEditingTrip(null)} />}
       {showLegal     && <LegalModal onClose={() => setShowLegal(false)} />}
