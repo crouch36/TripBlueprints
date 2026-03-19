@@ -223,7 +223,9 @@ const SAMPLE_TRIPS = [
 ];
 
 const REGIONS = ["All Regions","Asia","Europe","Central America","North America","South America","Africa","Oceania"];
-const TAGS    = ["All","family-friendly","romantic","adventure","food & wine","culture","beach","wildlife","scenic drives"];
+const PRIMARY_TAGS  = ["All","family-friendly","romantic","adventure","food & wine","culture","beach","wildlife","scenic drives"];
+const EXTENDED_TAGS = ["solo","girls trip","guys trip","road trip","city break","ski & snow","national parks","budget","luxury","off the beaten path","hiking & trekking","nightlife","history & heritage","wellness & spa","bachelor/bachelorette","group travel","long weekend","kid-free"];
+const TAGS = [...PRIMARY_TAGS, ...EXTENDED_TAGS];
 
 const catConfig = {
   airfare:     { label: "✈️ Airfare",      color: C.azureDeep  },
@@ -1828,6 +1830,7 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [region, setRegion] = useState("All Regions");
   const [tag, setTag] = useState("All");
+  const [sortBy, setSortBy] = useState("default");
   const isMobile = () => window.innerWidth < 640;
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile());
   useEffect(() => {
@@ -1894,6 +1897,7 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLegal, setShowLegal] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showMoreTags, setShowMoreTags] = useState(false);
   useEffect(() => { window.__setShowLegal = setShowLegal; }, []);
   const [editingTrip, setEditingTrip] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -1902,11 +1906,17 @@ export default function App() {
   const handleSaveTrip = (updated) => { setTrips(p => p.map(t => t.id === updated.id ? updated : t)); setEditingTrip(null); };
   const handleDeleteTrip = (id) => { setTrips(p => p.filter(t => t.id !== id)); setConfirmDelete(null); };
 
-  const filtered = useMemo(() => allTrips.filter(t =>
-    (!search || [t.title,t.destination,t.travelers,t.loves].some(s=>s.toLowerCase().includes(search.toLowerCase()))) &&
-    (region==="All Regions"||t.region===region) &&
-    (tag==="All"||t.tags.includes(tag))
-  ), [trips, search, region, tag]);
+  const filtered = useMemo(() => {
+    const f = allTrips.filter(t =>
+      (!search || [t.title,t.destination,t.travelers,t.loves].some(s=>s.toLowerCase().includes(search.toLowerCase()))) &&
+      (region==="All Regions"||t.region===region) &&
+      (tag==="All"||t.tags.includes(tag))
+    );
+    if (sortBy === "submitter") f.sort((a,b) => a.author.localeCompare(b.author));
+    else if (sortBy === "destination") f.sort((a,b) => a.destination.localeCompare(b.destination));
+    else if (sortBy === "duration") f.sort((a,b) => parseInt(a.duration)||0 - (parseInt(b.duration)||0));
+    return f;
+  }, [trips, search, region, tag, sortBy]);
 
   return (
     <div style={{ minHeight:"100vh", background:C.seafoam, fontFamily:"'Nunito',system-ui,sans-serif", overflowX:"hidden" }}>
@@ -2007,10 +2017,13 @@ export default function App() {
             <div style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, padding:"14px 16px", marginBottom:"14px", boxShadow:`0 1px 4px rgba(44,62,80,0.05)` }}>
               <div style={{ fontSize:"10px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"10px" }}>Trip Type</div>
               <div style={{ display:"flex", flexWrap:"wrap", gap:"5px" }}>
-                {TAGS.map(t => (
+                {(showMoreTags ? TAGS : PRIMARY_TAGS).map(t => (
                   <button key={t} onClick={() => setTag(t)} style={{ padding:"3px 9px", borderRadius:"20px", border:`1px solid ${tag===t?C.slate:C.tide}`, background:tag===t?C.slate:C.white, color:tag===t?C.white:C.slateLight, fontSize:"10px", fontWeight:600, cursor:"pointer", transition:"all .12s" }}>{t}</button>
                 ))}
               </div>
+              <button onClick={() => setShowMoreTags(p=>!p)} style={{ marginTop:"8px", fontSize:"10px", fontWeight:700, color:C.amber, background:"none", border:"none", cursor:"pointer", padding:"2px 0" }}>
+                {showMoreTags ? "▲ Show less" : `▼ More types (${EXTENDED_TAGS.length})`}
+              </button>
             </div>
 
             {/* Region filter */}
@@ -2064,11 +2077,22 @@ export default function App() {
 
         {/* Main content */}
         <main id="trip-grid" style={{ flex:1, minWidth:0 }}>
-          <div style={{ marginBottom:"14px", fontSize:"12px", color:C.muted, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ marginBottom:"14px", fontSize:"12px", color:C.muted, display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"8px" }}>
             <span><strong style={{ color:C.slate }}>{filtered.length}</strong> itinerar{filtered.length!==1?"ies":"y"}{search&&<> for "<strong style={{ color:C.slate }}>{search}</strong>"</>}</span>
-            {(region !== "All Regions" || tag !== "All") && (
-              <button onClick={() => { setRegion("All Regions"); setTag("All"); }} style={{ fontSize:"11px", color:C.amber, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>Clear filters ×</button>
-            )}
+            <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+              {(region !== "All Regions" || tag !== "All") && (
+                <button onClick={() => { setRegion("All Regions"); setTag("All"); }} style={{ fontSize:"11px", color:C.amber, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>Clear filters ×</button>
+              )}
+              <div style={{ display:"flex", alignItems:"center", gap:"5px" }}>
+                <span style={{ fontSize:"11px", color:C.muted }}>Sort:</span>
+                <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{ fontSize:"11px", fontWeight:600, color:C.slate, border:`1px solid ${C.tide}`, borderRadius:"6px", padding:"3px 7px", background:C.white, cursor:"pointer", outline:"none", fontFamily:"inherit" }}>
+                  <option value="default">Default</option>
+                  <option value="submitter">By Submitter</option>
+                  <option value="destination">By Destination</option>
+                  <option value="duration">By Duration</option>
+                </select>
+              </div>
+            </div>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(280px,100%),1fr))", gap:"18px" }}>
             {filtered.map(trip => (
