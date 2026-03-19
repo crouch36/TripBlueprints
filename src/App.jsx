@@ -2094,6 +2094,11 @@ export default function App() {
 
   useEffect(() => { fetchTrips(); }, []);
 
+  const openTrip = (trip) => { setSelected(trip); window.history.pushState(null, "", `#trip/${trip.id}`); };
+  const closeTrip = () => { setSelected(null); window.history.pushState(null, "", window.location.pathname); };
+
+  const allTrips = [...dbTrips, ...trips];
+
   // URL hash routing for individual trips
   useEffect(() => {
     window.__openTrip = (trip) => setSelected(trip);
@@ -2109,8 +2114,6 @@ export default function App() {
     handleHash();
     return () => window.removeEventListener("hashchange", handleHash);
   }, [allTrips]);
-
-  const allTrips = [...dbTrips, ...trips];
 
   // Auth state
   const [currentUser, setCurrentUser] = useState(null);
@@ -2154,8 +2157,6 @@ export default function App() {
   const [editingTrip, setEditingTrip] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  const openTrip = (trip) => { setSelected(trip); window.history.pushState(null, "", `#trip/${trip.id}`); };
-  const closeTrip = () => { setSelected(null); window.history.pushState(null, "", window.location.pathname); };
   const handleSaveTrip = async (updated) => {
     await supabase.from("trips").update({
       title: updated.title, destination: updated.destination, region: updated.region,
