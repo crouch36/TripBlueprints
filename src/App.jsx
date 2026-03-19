@@ -1044,6 +1044,31 @@ function SubmitTripModal({ onClose, currentUser, displayName }) {
   const [submitterName, setSubmitterName] = useState(displayName || "");
   const [submitterEmail, setSubmitterEmail] = useState(currentUser?.email || "");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [coverPhoto, setCoverPhoto] = useState(null);
+  const [coverPhotoPreview, setCoverPhotoPreview] = useState(null);
+  const [photoError, setPhotoError] = useState("");
+  const photoRef = useRef(null);
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const allowed = ["image/jpeg","image/png","image/webp","image/heic","image/heif","image/gif","image/avif","image/tiff"];
+    if (!allowed.includes(file.type)) { setPhotoError("File type not supported. Please use JPG, PNG, WEBP, HEIC, or similar."); return; }
+    if (file.size > 5 * 1024 * 1024) { setPhotoError("Photo must be under 5MB."); return; }
+    setPhotoError("");
+    setCoverPhoto(file);
+    setCoverPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const uploadPhoto = async () => {
+    if (!coverPhoto) return null;
+    const ext = coverPhoto.name.split(".").pop();
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from("trip-photos").upload(path, coverPhoto, { contentType: coverPhoto.type, upsert: false });
+    if (error) { console.error("Photo upload error:", error); return null; }
+    const { data } = supabase.storage.from("trip-photos").getPublicUrl(path);
+    return data.publicUrl;
+  };
   const [form, setForm] = useState({
     title:"", destination:"", region:"Europe", duration:"", travelers:"", date:"", tags:[], loves:"", doNext:"",
     airfare:[{item:"",detail:"",tip:""}], hotels:[{item:"",detail:"",tip:""}],
@@ -1085,7 +1110,9 @@ function SubmitTripModal({ onClose, currentUser, displayName }) {
   const handleSubmit = async () => {
     if (!submitterName || !submitterEmail) { alert("Please add your name and email."); return; }
     setStep("submitting");
-    const result = runContentFilter({ ...form });
+    const photoUrl = await uploadPhoto();
+    const tripWithPhoto = { ...form, image: photoUrl || "" };
+    const result = runContentFilter(tripWithPhoto);
     setFilterResult(result);
     if (result.passed) {
       await supabase.from("trips").insert([{
@@ -1094,12 +1121,13 @@ function SubmitTripModal({ onClose, currentUser, displayName }) {
         date: form.date, duration: form.duration, travelers: form.travelers,
         tags: form.tags, loves: form.loves, do_next: form.doNext,
         airfare: form.airfare, hotels: form.hotels, restaurants: form.restaurants,
-        bars: form.bars, activities: form.activities, days: form.days, status: "published"
+        bars: form.bars, activities: form.activities, days: form.days,
+        image: photoUrl || "", status: "published"
       }]);
       setStep("done");
     } else {
       await supabase.from("submissions").insert([{
-        trip_data: { ...form }, submitter_name: submitterName, submitter_email: submitterEmail,
+        trip_data: tripWithPhoto, submitter_name: submitterName, submitter_email: submitterEmail,
         status: "flagged", ai_flagged: true, ai_flag_reason: result.flags.join("; ")
       }]);
       setStep("flagged");
@@ -1193,6 +1221,26 @@ function SubmitTripModal({ onClose, currentUser, displayName }) {
               </div>
             ))}
             <div style={{ borderTop:`1px solid ${C.tide}`, paddingTop:"14px", marginTop:"6px" }}>
+              <div style={{ fontSize:"12px", fontWeight:700, color:C.slate, marginBottom:"6px" }}>📸 Cover Photo <span style={{ fontWeight:400, color:C.muted }}>(optional)</span></div>
+              <input ref={photoRef} type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/gif,image/avif,image/tiff" style={{ display:"none" }} onChange={handlePhotoChange} />
+              {coverPhotoPreview ? (
+                <div style={{ position:"relative", marginBottom:"8px" }}>
+                  <img src={coverPhotoPreview} alt="Cover preview" style={{ width:"100%", height:"140px", objectFit:"cover", borderRadius:"10px", border:`1px solid ${C.tide}` }} />
+                  <button onClick={() => { setCoverPhoto(null); setCoverPhotoPreview(null); photoRef.current.value=""; }} style={{ position:"absolute", top:"8px", right:"8px", background:"rgba(0,0,0,0.5)", border:"none", color:C.white, borderRadius:"50%", width:"26px", height:"26px", cursor:"pointer", fontSize:"14px", display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
+                </div>
+              ) : (
+                <div onClick={() => photoRef.current.click()} style={{ border:`2px dashed ${C.tide}`, borderRadius:"10px", padding:"20px", textAlign:"center", cursor:"pointer", background:C.seafoam, marginBottom:"8px" }}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor=C.amber}
+                  onMouseLeave={e=>e.currentTarget.style.borderColor=C.tide}>
+                  <div style={{ fontSize:"24px", marginBottom:"6px" }}>🖼️</div>
+                  <div style={{ fontSize:"12px", fontWeight:600, color:C.slateMid }}>Upload a cover photo</div>
+                  <div style={{ fontSize:"10px", color:C.muted, marginTop:"3px" }}>JPG, PNG, WEBP, HEIC · Max 5MB</div>
+                </div>
+              )}
+              {photoError && <div style={{ fontSize:"11px", color:C.red, marginBottom:"6px" }}>{photoError}</div>}
+            </div>
+
+            <div style={{ borderTop:`1px solid ${C.tide}`, paddingTop:"14px", marginTop:"6px" }}>
               <div style={{ fontSize:"12px", fontWeight:700, color:C.slate, marginBottom:"10px" }}>Your details</div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
                 <div><label style={lbl}>Your Name</label><input style={inp} value={submitterName} onChange={e=>setSubmitterName(e.target.value)} /></div>
@@ -1273,7 +1321,8 @@ function AdminQueueModal({ onClose }) {
       date:t.date, duration:t.duration, travelers:t.travelers,
       tags:t.tags||[], loves:t.loves, do_next:t.doNext,
       airfare:t.airfare||[], hotels:t.hotels||[], restaurants:t.restaurants||[],
-      bars:t.bars||[], activities:t.activities||[], days:t.days||[], status:"published"
+      bars:t.bars||[], activities:t.activities||[], days:t.days||[],
+      image:t.image||"", status:"published"
     }]);
     await supabase.from("submissions").update({ status:"approved", reviewed_at:new Date().toISOString() }).eq("id",sub.id);
     setSubmissions(p => p.map(s => s.id===sub.id ? {...s,status:"approved"} : s));
@@ -1852,7 +1901,8 @@ export default function App() {
             author:t.author_name, date:t.date, duration:t.duration, travelers:t.travelers,
             tags:t.tags||[], loves:t.loves, doNext:t.do_next,
             airfare:t.airfare||[], hotels:t.hotels||[], restaurants:t.restaurants||[],
-            bars:t.bars||[], activities:t.activities||[], days:t.days||[]
+            bars:t.bars||[], activities:t.activities||[], days:t.days||[],
+            image:t.image||""
           }));
           setDbTrips(mapped);
         }
