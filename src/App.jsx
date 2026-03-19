@@ -2087,7 +2087,7 @@ export default function App() {
     else if (sortBy === "destination") f.sort((a,b) => a.destination.localeCompare(b.destination));
     else if (sortBy === "duration") f.sort((a,b) => parseInt(a.duration)||0 - (parseInt(b.duration)||0));
     return f;
-  }, [trips, search, region, tag, sortBy]);
+  }, [dbTrips, trips, search, region, tag, sortBy]);
 
   return (
     <div style={{ minHeight:"100vh", background:C.seafoam, fontFamily:"'Nunito',system-ui,sans-serif", overflowX:"hidden" }}>
