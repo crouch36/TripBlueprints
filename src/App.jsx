@@ -2369,6 +2369,7 @@ export default function App() {
   const isAdminUrl = window.location.pathname === "/admin" || window.location.hash === "#admin";
   const [showAdminLogin, setShowAdminLogin] = useState(isAdminUrl);
   const [isAdmin, setIsAdmin] = useState(false);
+  const handleAdminLogin = () => { setIsAdmin(true); setShowAdminLogin(false); };
   const [showLegal, setShowLegal] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showMoreTags, setShowMoreTags] = useState(false);
