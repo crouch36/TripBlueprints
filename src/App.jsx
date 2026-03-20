@@ -493,7 +493,7 @@ async function reverseGeocode(lat, lon) {
   } catch { return null; }
 }
 
-function PhotoImportModal({ onClose, onComplete }) {
+function PhotoImportModal({ onClose, onComplete, skipCloseOnComplete }) {
   const [phase, setPhase] = useState("drop");
   const [photos, setPhotos] = useState([]);
   const [progress, setProgress] = useState(0);
@@ -550,7 +550,7 @@ function PhotoImportModal({ onClose, onComplete }) {
 
       const parts = [
         {
-          text: `You are analysing travel photos to reconstruct a trip itinerary. Here is the metadata extracted from each photo:\n\n${metaSummary}\n\nPlease analyse all photos and the metadata above to reconstruct the trip. Return ONLY a JSON object with this exact structure, no other text:\n{\n  "destination": "City, Country",\n  "region": "Europe|Asia|North America|Central America|South America|Africa|Oceania",\n  "duration": "N days",\n  "travelers": "description e.g. Couple, Family, Guys trip",\n  "tags": ["tag1", "tag2"],\n  "loves": "2-4 sentences about highlights visible in the photos",\n  "doNext": "1-2 sentences of honest advice based on what you can see",\n  "hotels": [{"item": "name", "detail": "location", "tip": ""}],\n  "restaurants": [{"item": "name or description", "detail": "type of food/cuisine", "tip": ""}],\n  "bars": [{"item": "name", "detail": "type", "tip": ""}],\n  "activities": [{"item": "name", "detail": "description", "tip": ""}],\n  "days": [{"day": 1, "date": "", "title": "Day title", "items": [{"time": "", "type": "activity|restaurant|bar|hotel|transport", "label": "what happened", "note": ""}]}]\n}\nFor restaurants/bars/activities, use any visible signage to name them. If GPS data shows a specific place, use it. Be specific where you can, descriptive where you cannot.`
+          text: `You are analysing travel photos to reconstruct a trip itinerary. Here is the GPS and timestamp metadata extracted from each photo:\n\n${metaSummary}\n\nIMPORTANT: Use the GPS location data to identify SPECIFIC venue names. If GPS shows a photo was taken at a specific street address or named place, use that exact place name. Do not use generic descriptions like "local restaurant" or "hotel balcony" — always try to name the specific venue based on GPS coordinates, visible signage, or recognisable landmarks.\n\nReturn ONLY a JSON object with this exact structure, no other text:\n{\n  "destination": "City, Country",\n  "region": "Europe|Asia|North America|Central America|South America|Africa|Oceania",\n  "duration": "N days",\n  "travelers": "description e.g. Couple, Family, Guys trip",\n  "tags": ["tag1", "tag2"],\n  "loves": "2-4 sentences about specific highlights visible in the photos — name actual places",\n  "doNext": "1-2 sentences of honest advice",\n  "hotels": [{"item": "hotel name from GPS or signage", "detail": "location", "tip": ""}],\n  "restaurants": [{"item": "restaurant name from GPS or signage", "detail": "cuisine type", "tip": ""}],\n  "bars": [{"item": "bar name from GPS or signage", "detail": "type", "tip": ""}],\n  "activities": [{"item": "specific activity or landmark name", "detail": "description", "tip": ""}],\n  "days": [{"day": 1, "date": "", "title": "Day title", "items": [{"time": "", "type": "activity|restaurant|bar|hotel|transport", "label": "specific venue or activity name", "note": ""}]}]\n}`
         },
         ...compressed.map(p => ({
           inline_data: { mime_type: "image/jpeg", data: p.b64 }
@@ -687,7 +687,7 @@ function PhotoImportModal({ onClose, onComplete }) {
 
             <div style={{ display:"flex", gap:"10px", marginTop:"20px" }}>
               <button onClick={onClose} style={{ flex:1, padding:"10px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"12px", fontWeight:600, cursor:"pointer" }}>Cancel</button>
-              <button onClick={() => { onComplete && onComplete(result); onClose(); }} style={{ flex:2, padding:"10px", borderRadius:"8px", border:"none", background:C.cta, color:C.ctaText, fontSize:"13px", fontWeight:700, cursor:"pointer" }}>
+              <button onClick={() => { onComplete && onComplete(result); if (!skipCloseOnComplete) onClose(); }} style={{ flex:2, padding:"10px", borderRadius:"8px", border:"none", background:C.cta, color:C.ctaText, fontSize:"13px", fontWeight:700, cursor:"pointer" }}>
                 Import to Trip Form →
               </button>
             </div>
@@ -1554,6 +1554,7 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
               }));
               setStep("form");
             }}
+            skipCloseOnComplete
           />
         )}
 
