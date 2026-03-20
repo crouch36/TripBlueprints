@@ -1153,9 +1153,9 @@ function TripCard({ trip, onClick, isBookmarked, onBookmark }) {
   const grad = REGION_GRADIENTS[trip.region] || "linear-gradient(135deg,#8B7355,#C4A882)";
   const emoji = REGION_EMOJI[trip.region] || "🌍";
   return (
-    <div onClick={() => onClick(trip)} style={{ background:C.white, border:`1px solid ${C.tide}`, borderRadius:"16px", overflow:"hidden", cursor:"pointer", transition:"all .2s", boxShadow:`0 2px 12px rgba(44,62,80,0.07)` }}
+    <div onClick={() => onClick(trip)} style={{ background:C.white, border:`${trip.featured?"2px solid #C4A882":"1px solid "+C.tide}`, borderRadius:"16px", overflow:"hidden", cursor:"pointer", transition:"all .2s", boxShadow:trip.featured?`0 4px 20px rgba(196,168,130,0.25)`:`0 2px 12px rgba(44,62,80,0.07)` }}
       onMouseEnter={e => { e.currentTarget.style.boxShadow=`0 10px 32px rgba(28,43,58,0.15)`; e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.borderColor=C.amber; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow=`0 2px 12px rgba(44,62,80,0.07)`; e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=C.tide; }}>
+      onMouseLeave={e => { e.currentTarget.style.boxShadow=trip.featured?`0 4px 20px rgba(196,168,130,0.25)`:`0 2px 12px rgba(44,62,80,0.07)`; e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=trip.featured?"#C4A882":C.tide; }}>
       {/* Image / placeholder */}
       <div style={{ height:"148px", background:trip.image ? "transparent" : grad, position:"relative", display:"flex", alignItems:"flex-end", padding:"14px", overflow:"hidden" }}>
         {trip.image
@@ -1168,6 +1168,7 @@ function TripCard({ trip, onClick, isBookmarked, onBookmark }) {
           <div style={{ fontSize:"16px", fontWeight:700, color:"#FFFFFF", fontFamily:"'Playfair Display',Georgia,serif", lineHeight:1.2, textShadow:"0 1px 4px rgba(0,0,0,0.3)" }}>{trip.title}</div>
         </div>
         <div style={{ position:"absolute", top:"12px", right:"12px", background:"rgba(0,0,0,0.25)", borderRadius:"20px", padding:"3px 10px", fontSize:"10px", color:"rgba(255,255,255,0.9)", fontWeight:600 }}>{trip.duration}</div>
+        {trip.featured && <div style={{ position:"absolute", top:"12px", left:"44px", background:"linear-gradient(135deg,#C4A882,#A8896A)", borderRadius:"20px", padding:"3px 10px", fontSize:"10px", color:"#fff", fontWeight:700, display:"flex", alignItems:"center", gap:"4px" }}>✦ Featured</div>}
         {/* Bookmark button */}
         <button onClick={e => { e.stopPropagation(); onBookmark && onBookmark(trip.id); }} style={{ position:"absolute", top:"10px", left:"12px", background:"rgba(0,0,0,0.3)", border:"none", borderRadius:"50%", width:"28px", height:"28px", cursor:"pointer", fontSize:"14px", display:"flex", alignItems:"center", justifyContent:"center", transition:"all .15s" }}
           title={isBookmarked ? "Remove bookmark" : "Bookmark this trip"}>
@@ -1907,7 +1908,11 @@ function ProfilePage({ authorName, allTrips, onClose, onTripClick, currentUser, 
                 {authorName.charAt(0).toUpperCase()}
               </div>
               <div>
-                <div style={{ fontSize:"24px", fontWeight:700, color:"#FAF7F2", fontFamily:"'Playfair Display',Georgia,serif", marginBottom:"4px" }}>{authorName}</div>
+                <div style={{ fontSize:"24px", fontWeight:700, color:"#FAF7F2", fontFamily:"'Playfair Display',Georgia,serif", marginBottom:"4px" }}>
+                  {authorName}
+                  {profile?.featured_contributor && <span style={{ marginLeft:"8px", fontSize:"13px", background:"linear-gradient(135deg,#C4A882,#A8896A)", borderRadius:"20px", padding:"2px 10px", fontWeight:700, fontFamily:"'Nunito',sans-serif" }}>✦ Featured</span>}
+                </div>
+                {profile?.bio && <div style={{ fontSize:"13px", color:"rgba(250,247,242,0.8)", marginBottom:"6px", lineHeight:1.5 }}>{profile.bio}</div>}
                 <div style={{ display:"flex", gap:"16px", flexWrap:"wrap" }}>
                   <span style={{ fontSize:"12px", color:"rgba(196,168,130,0.9)" }}>🗺️ {contributorTrips.length} itinerary{contributorTrips.length!==1?"s":""}</span>
                   {memberSince && <span style={{ fontSize:"12px", color:"rgba(196,168,130,0.9)" }}>📅 Member since {memberSince}</span>}
@@ -2049,6 +2054,13 @@ function AdminEditModal({ trip, onSave, onClose }) {
             <div><label style={lbl}>Travelers</label><input style={inp} value={form.travelers} onChange={e=>updField("travelers",e.target.value)} /></div>
             <div><label style={lbl}>Author</label><input style={inp} value={form.author} onChange={e=>updField("author",e.target.value)} /></div>
             <div style={{ gridColumn:"1/-1" }}><label style={lbl}>🖼️ Cover Image URL <span style={{ fontWeight:400, color:C.muted }}>(e.g. /victoria-street.jpg or full https:// URL — leave blank for gradient)</span></label><input style={inp} value={form.image||""} onChange={e=>updField("image",e.target.value)} placeholder="/your-photo.jpg or https://..." /></div>
+            <div style={{ gridColumn:"1/-1" }}>
+              <label style={{ display:"flex", alignItems:"center", gap:"10px", cursor:"pointer" }}>
+                <input type="checkbox" checked={form.featured||false} onChange={e=>updField("featured",e.target.checked)} style={{ width:"16px", height:"16px", accentColor:C.amber }} />
+                <span style={{ fontSize:"12px", fontWeight:700, color:C.amber }}>✦ Mark as Featured Itinerary</span>
+                <span style={{ fontSize:"11px", color:C.muted }}>(appears in Featured section at top of page)</span>
+              </label>
+            </div>
           </div>
           {form.image && (
             <div style={{ marginBottom:"14px" }}>
@@ -2303,7 +2315,7 @@ export default function App() {
             tags:t.tags||[], loves:t.loves, doNext:t.do_next,
             airfare:t.airfare||[], hotels:t.hotels||[], restaurants:t.restaurants||[],
             bars:t.bars||[], activities:t.activities||[], days:t.days||[],
-            image:t.image||"", userId:t.user_id||null
+            image:t.image||"", userId:t.user_id||null, featured:t.featured||false
           }));
           setDbTrips(mapped);
         }
@@ -2393,7 +2405,7 @@ export default function App() {
       tags: updated.tags, loves: updated.loves, do_next: updated.doNext,
       airfare: updated.airfare, hotels: updated.hotels, restaurants: updated.restaurants,
       bars: updated.bars, activities: updated.activities, days: updated.days,
-      image: updated.image || ""
+      image: updated.image || "", featured: updated.featured || false
     }).eq("id", updated.id);
     setTrips(p => p.map(t => t.id === updated.id ? updated : t));
     setDbTrips(p => p.map(t => t.id === updated.id ? updated : t));
@@ -2598,23 +2610,64 @@ export default function App() {
               {tag==="__bookmarks__" && <button onClick={() => setTag("All")} style={{ fontSize:"11px", color:C.muted, background:"none", border:"none", cursor:"pointer" }}>× Clear</button>}
             </div>
           )}
-          <div style={{ marginBottom:"14px", fontSize:"12px", color:C.muted, display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"8px" }}>
-            <span><strong style={{ color:C.slate }}>{filtered.length}</strong> itinerar{filtered.length!==1?"ies":"y"}{search&&<> for "<strong style={{ color:C.slate }}>{search}</strong>"</>}</span>
-            <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-              {(region !== "All Regions" || tag !== "All" || duration !== "Any Length") && (
-                <button onClick={() => { setRegion("All Regions"); setTag("All"); setDuration("Any Length"); }} style={{ fontSize:"11px", color:C.amber, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>Clear filters ×</button>
-              )}
-              <div style={{ display:"flex", alignItems:"center", gap:"5px" }}>
-                <span style={{ fontSize:"11px", color:C.muted }}>Sort:</span>
-                <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{ fontSize:"11px", fontWeight:600, color:C.slate, border:`1px solid ${C.tide}`, borderRadius:"6px", padding:"3px 7px", background:C.white, cursor:"pointer", outline:"none", fontFamily:"inherit" }}>
-                  <option value="default">Default</option>
-                  <option value="submitter">By Submitter</option>
-                  <option value="destination">By Destination</option>
-                  <option value="duration">By Duration</option>
-                </select>
+
+          {/* Featured section — only show when no active filters */}
+          {!search && region==="All Regions" && tag==="All" && duration==="Any Length" && sortBy==="default" && (() => {
+            const featuredTrips = allTrips.filter(t => t.featured);
+            if (!featuredTrips.length) return null;
+            return (
+              <div style={{ marginBottom:"32px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"16px" }}>
+                  <span style={{ fontSize:"16px" }}>✦</span>
+                  <div style={{ fontSize:"13px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',serif", letterSpacing:"0.02em" }}>Featured Itineraries</div>
+                  <div style={{ flex:1, height:"1px", background:C.tide }} />
+                  <span style={{ fontSize:"10px", color:C.muted, fontWeight:600 }}>Editor's Picks</span>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(300px,100%),1fr))", gap:"18px" }}>
+                  {featuredTrips.map(trip => (
+                    <div key={trip.id} style={{ position:"relative" }}>
+                      <TripCard trip={trip} onClick={openTrip} isBookmarked={bookmarks.includes(trip.id)} onBookmark={toggleBookmark} />
+                      {isAdmin && (
+                        <div style={{ position:"absolute", top:"12px", right:"12px", display:"flex", gap:"6px", zIndex:10 }}>
+                          <button onClick={e => { e.stopPropagation(); setEditingTrip(trip); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:C.azure, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>✏️</button>
+                          <button onClick={e => { e.stopPropagation(); setConfirmDelete(trip); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:C.red, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>🗑️</button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
+            );
+          })()}
+
+          {/* All itineraries */}
+          <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"14px", flexWrap:"wrap" }}>
+            <div style={{ fontSize:"12px", color:C.muted }}>
+              <strong style={{ color:C.slate }}>{filtered.length}</strong> itinerar{filtered.length!==1?"ies":"y"}{search&&<> for "<strong style={{ color:C.slate }}>{search}</strong>"</>}
+            </div>
+            <div style={{ flex:1 }} />
+            {(region !== "All Regions" || tag !== "All" || duration !== "Any Length") && (
+              <button onClick={() => { setRegion("All Regions"); setTag("All"); setDuration("Any Length"); }} style={{ fontSize:"11px", color:C.amber, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>Clear filters ×</button>
+            )}
+            <div style={{ display:"flex", alignItems:"center", gap:"5px" }}>
+              <span style={{ fontSize:"11px", color:C.muted }}>Sort:</span>
+              <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{ fontSize:"11px", fontWeight:600, color:C.slate, border:`1px solid ${C.tide}`, borderRadius:"6px", padding:"3px 7px", background:C.white, cursor:"pointer", outline:"none", fontFamily:"inherit" }}>
+                <option value="default">Default</option>
+                <option value="submitter">By Submitter</option>
+                <option value="destination">By Destination</option>
+                <option value="duration">By Duration</option>
+              </select>
             </div>
           </div>
+
+          {!search && region==="All Regions" && tag==="All" && duration==="Any Length" && sortBy==="default" && allTrips.some(t => t.featured) && (
+            <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"14px" }}>
+              <div style={{ flex:1, height:"1px", background:C.tide }} />
+              <span style={{ fontSize:"11px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.07em" }}>All Itineraries</span>
+              <div style={{ flex:1, height:"1px", background:C.tide }} />
+            </div>
+          )}
+
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(280px,100%),1fr))", gap:"18px" }}>
             {filtered.map(trip => (
               <div key={trip.id} style={{ position:"relative" }}>
