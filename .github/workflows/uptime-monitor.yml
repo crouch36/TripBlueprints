@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Check homepage
         run: |
-          STATUS=$(curl -o /dev/null -s -w "%{http_code}" --max-time 15 https://tripcopycat.com)
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" --max-time 15 -L https://tripcopycat.com)
           echo "Homepage HTTP status: $STATUS"
           if [ "$STATUS" -ne 200 ]; then
             echo "❌ HOMEPAGE IS DOWN - HTTP $STATUS"
@@ -21,7 +21,7 @@ jobs:
 
       - name: Check trip page
         run: |
-          STATUS=$(curl -o /dev/null -s -w "%{http_code}" --max-time 15 https://tripcopycat.com/trips/d329d3a2-16d2-49a6-8436-5ecb614c4d68)
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" --max-time 15 -L https://tripcopycat.com/trips/d329d3a2-16d2-49a6-8436-5ecb614c4d68)
           echo "Trip page HTTP status: $STATUS"
           if [ "$STATUS" -ne 200 ]; then
             echo "❌ TRIP PAGE IS DOWN - HTTP $STATUS"
