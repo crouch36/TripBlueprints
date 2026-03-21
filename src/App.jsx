@@ -1061,13 +1061,20 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
               </div>
               <div style={{ padding:"20px 24px", background:C.white }}>
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:"9px", marginBottom:"18px" }}>
-                  {Object.entries(catConfig).map(([key,cfg]) => (
-                    <div key={key} style={{ textAlign:"center", padding:"12px 6px", background:C.seafoam, borderRadius:"10px", border:`1px solid ${C.tide}` }}>
-                      <div style={{ fontSize:"17px", marginBottom:"3px" }}>{cfg.label.split(" ")[0]}</div>
-                      <div style={{ fontSize:"19px", fontWeight:800, color:cfg.color }}>{trip[key]?.length||0}</div>
-                      <div style={{ fontSize:"9px", color:C.muted, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.05em" }}>{key}</div>
-                    </div>
-                  ))}
+                  {Object.entries(catConfig).map(([key,cfg]) => {
+                    const count = trip[key]?.length||0;
+                    return (
+                      <button key={key} onClick={() => { setView("details"); setTab(key); }} disabled={count===0}
+                        style={{ textAlign:"center", padding:"12px 6px", background:count>0?C.seafoam:"#f8f8f6", borderRadius:"10px", border:`1px solid ${count>0?C.tide:"#eee"}`, cursor:count>0?"pointer":"default", transition:"all .15s", opacity:count>0?1:0.5 }}
+                        onMouseEnter={e => { if(count>0) { e.currentTarget.style.background=C.amberBg; e.currentTarget.style.borderColor=C.amber; }}}
+                        onMouseLeave={e => { e.currentTarget.style.background=count>0?C.seafoam:"#f8f8f6"; e.currentTarget.style.borderColor=count>0?C.tide:"#eee"; }}>
+                        <div style={{ fontSize:"17px", marginBottom:"3px" }}>{cfg.label.split(" ")[0]}</div>
+                        <div style={{ fontSize:"19px", fontWeight:800, color:cfg.color }}>{count}</div>
+                        <div style={{ fontSize:"9px", color:C.muted, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.05em" }}>{key}</div>
+                        {count>0 && <div style={{ fontSize:"8px", color:C.amber, marginTop:"3px", fontWeight:700 }}>View →</div>}
+                      </button>
+                    );
+                  })}
                 </div>
                 <button onClick={() => setView("daily")} style={{ width:"100%", padding:"12px", background:C.cta, color:C.white, border:"none", borderRadius:"10px", fontSize:"13px", fontWeight:700, cursor:"pointer" }}>
                   📅 View Day-by-Day Itinerary →
@@ -1086,32 +1093,34 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
           )}
 
           {view === "details" && (
-            <div style={{ padding:"24px 28px", background:C.white }}>
-              <div style={{ display:"flex", gap:"5px", marginBottom:"20px", flexWrap:"wrap" }}>
-                {["all",...Object.keys(catConfig)].map(t => (
-                  <button key={t} onClick={() => setTab(t)} style={{ padding:"5px 12px", fontSize:"11px", fontWeight:600, borderRadius:"8px", border:`1px solid ${tab===t?C.azure:C.tide}`, cursor:"pointer", background:tab===t?C.azure:C.white, color:tab===t?C.white:C.slateLight }}>
-                    {t === "all" ? "All" : catConfig[t]?.label}
-                  </button>
-                ))}
-              </div>
+            <div style={{ padding:"16px 24px", background:C.white }}>
               {Object.entries(catConfig).map(([key,cfg]) => {
-                if (tab !== "all" && tab !== key) return null;
                 if (!trip[key]?.length) return null;
+                const isOpen = tab === key || tab === "all";
                 return (
-                  <div key={key} style={{ marginBottom:"26px" }}>
-                    <div style={{ fontWeight:700, fontSize:"13px", marginBottom:"9px", display:"flex", alignItems:"center", gap:"7px" }}>
-                      <span style={{ width:"8px", height:"8px", borderRadius:"50%", background:cfg.color, display:"inline-block" }} />{cfg.label}
-                    </div>
-                    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:"12px" }}>
-                      <thead><tr>{["Name","Details","💡 Tip"].map(h => <th key={h} style={{ textAlign:"left", padding:"7px 11px", background:C.seafoam, color:C.slateLight, fontWeight:600, fontSize:"10px", textTransform:"uppercase", letterSpacing:"0.05em" }}>{h}</th>)}</tr></thead>
-                      <tbody>{trip[key].map((it,i) => (
-                        <tr key={i} style={{ borderBottom:`1px solid ${C.seafoamDeep}` }}>
-                          <td style={{ padding:"9px 11px", fontWeight:600, color:C.slate }}>{it.item}</td>
-                          <td style={{ padding:"9px 11px", color:C.slate }}>{it.detail}</td>
-                          <td style={{ padding:"9px 11px", color:C.slateMid, fontStyle:"italic" }}>{it.tip}</td>
-                        </tr>
-                      ))}</tbody>
-                    </table>
+                  <div key={key} style={{ marginBottom:"8px", borderRadius:"10px", border:`1px solid ${isOpen ? cfg.color+"44" : C.tide}`, overflow:"hidden", transition:"all .2s" }}>
+                    <button onClick={() => setTab(isOpen && tab !== "all" ? "all" : key)}
+                      style={{ width:"100%", padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", background:isOpen ? cfg.color+"11" : C.white, border:"none", cursor:"pointer", textAlign:"left" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                        <span style={{ fontSize:"16px" }}>{cfg.label.split(" ")[0]}</span>
+                        <span style={{ fontSize:"13px", fontWeight:700, color:cfg.color }}>{cfg.label.split(" ").slice(1).join(" ")}</span>
+                        <span style={{ fontSize:"11px", background:cfg.color+"22", color:cfg.color, borderRadius:"20px", padding:"1px 8px", fontWeight:700 }}>{trip[key].length}</span>
+                      </div>
+                      <span style={{ fontSize:"12px", color:C.muted, transition:"transform .2s", display:"inline-block", transform:isOpen?"rotate(180deg)":"rotate(0deg)" }}>▾</span>
+                    </button>
+                    {isOpen && (
+                      <div style={{ borderTop:`1px solid ${cfg.color+"22"}` }}>
+                        {trip[key].map((it, i) => (
+                          <div key={i} style={{ padding:"12px 16px", borderBottom:i < trip[key].length-1 ? `1px solid ${C.seafoamDeep}` : "none", display:"grid", gridTemplateColumns:"1fr auto", gap:"8px" }}>
+                            <div>
+                              <div style={{ fontSize:"13px", fontWeight:700, color:C.slate, marginBottom:"2px" }}>{it.item}</div>
+                              {it.detail && <div style={{ fontSize:"11px", color:C.slateMid, marginBottom:"3px" }}>{it.detail}</div>}
+                              {it.tip && <div style={{ fontSize:"11px", color:C.amber, fontStyle:"italic" }}>💡 {it.tip}</div>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
