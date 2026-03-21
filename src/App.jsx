@@ -2034,7 +2034,12 @@ function ProfilePage({ authorName, allTrips, onClose, onTripClick, currentUser, 
                 </div>
               </div>
             </div>
-            <button onClick={onClose} style={{ background:"rgba(196,168,130,0.2)", border:"none", color:"#FAF7F2", borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px", flexShrink:0 }}>x</button>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:"8px", flexShrink:0 }}>
+              <button onClick={onClose} style={{ background:"rgba(196,168,130,0.2)", border:"none", color:"#FAF7F2", borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>×</button>
+              {currentUser && isOwnProfile && (
+                <button onClick={() => { supabase.auth.signOut(); onClose(); }} style={{ background:"rgba(255,255,255,0.1)", border:"none", color:"rgba(250,247,242,0.7)", borderRadius:"6px", padding:"4px 10px", fontSize:"11px", cursor:"pointer" }}>Sign out</button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -2616,12 +2621,9 @@ export default function App() {
             {isAdmin && <button onClick={() => setShowAdd(true)} style={{ background:C.cta, color:C.ctaText, border:"none", borderRadius:"8px", padding:"7px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer" }}>+ Add</button>}
             {!isAdmin && !currentUser && <button onClick={() => setShowAuth(true)} style={{ background:C.seafoam, color:C.slateMid, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>Sign In</button>}
             {!isAdmin && currentUser && (
-              <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
-                <button onClick={() => setViewingProfile(currentDisplayName)} style={{ background:C.seafoam, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"6px 10px", fontSize:"12px", fontWeight:600, color:C.slate, cursor:"pointer", display:"flex", alignItems:"center", gap:"6px" }}>
-                  <span style={{ width:"22px", height:"22px", borderRadius:"50%", background:C.cta, display:"inline-flex", alignItems:"center", justifyContent:"center", fontSize:"11px", fontWeight:800, color:C.ctaText }}>{currentDisplayName.charAt(0).toUpperCase()}</span>
-                </button>
-                <button onClick={handleSignOut} style={{ background:"none", border:"none", color:C.muted, fontSize:"11px", cursor:"pointer", padding:"4px" }}>Sign out</button>
-              </div>
+              <button onClick={() => setViewingProfile(currentDisplayName)} style={{ background:C.seafoam, border:`1px solid ${C.tide}`, borderRadius:"50%", padding:"4px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", width:"32px", height:"32px", flexShrink:0 }}>
+                <span style={{ width:"22px", height:"22px", borderRadius:"50%", background:C.cta, display:"inline-flex", alignItems:"center", justifyContent:"center", fontSize:"11px", fontWeight:800, color:C.ctaText }}>{currentDisplayName.charAt(0).toUpperCase()}</span>
+              </button>
             )}
           </div>
         </div>
@@ -2635,10 +2637,10 @@ export default function App() {
             Planned by others. Perfected by you.
           </h1>
           <div style={{ display:"flex", gap:"8px", justifyContent:"center", alignItems:"center", flexWrap:"wrap", marginBottom:"12px" }}>
-            <button onClick={() => { const el = document.getElementById("trip-grid"); if(el) el.scrollIntoView({ behavior:"smooth" }); }} style={{ background:C.amber, color:C.slate, border:`1.5px solid ${C.amber}`, borderRadius:"6px", padding:"8px 20px", fontSize:"12px", fontWeight:500, cursor:"pointer", fontFamily:"'Nunito',sans-serif", letterSpacing:"0.01em" }}>
+            <button onClick={() => { const el = document.getElementById("trip-grid"); if(el) el.scrollIntoView({ behavior:"smooth" }); }} style={{ background:C.amber, color:C.slate, border:`1.5px solid ${C.amber}`, borderRadius:"6px", padding:"7px 16px", fontSize:"12px", fontWeight:500, cursor:"pointer", fontFamily:"'Nunito',sans-serif", letterSpacing:"0.01em" }}>
               Leverage a Copycat
             </button>
-            <button onClick={() => openSubmit()} style={{ background:"transparent", color:C.slate, border:`1.5px solid ${C.slate}`, borderRadius:"6px", padding:"8px 20px", fontSize:"12px", fontWeight:500, cursor:"pointer", fontFamily:"'Nunito',sans-serif", letterSpacing:"0.01em" }}>
+            <button onClick={() => openSubmit()} style={{ background:"transparent", color:C.slate, border:`1.5px solid ${C.slate}`, borderRadius:"6px", padding:"7px 16px", fontSize:"12px", fontWeight:500, cursor:"pointer", fontFamily:"'Nunito',sans-serif", letterSpacing:"0.01em" }}>
               Submit a Trip →
             </button>
           </div>
