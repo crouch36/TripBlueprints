@@ -246,53 +246,47 @@ const ADMIN_PASSWORDS = ["Guinness"];
 // ── AI Prompt Generator ───────────────────────────────────────────────────────
 const AI_SUBMISSION_PROMPT = `You are helping me document a trip I took so I can share it on TripCopycat.
 
-Please ask me questions about my trip and help me fill in the following details. Ask conversationally, one section at a time. When done, output a clean structured summary under these exact headings:
+Please ask me questions about my trip conversationally, one section at a time. When you have gathered all the information, output ONLY a JSON object in this exact format with no other text before or after it:
 
-TRIP OVERVIEW
-- Title:
-- Destination:
-- Region: (Asia / Europe / North America / Central America / South America / Africa / Oceania)
-- Date: (Month Year)
-- Duration:
-- Who traveled:
-- Tags: (choose from: family-friendly, romantic, adventure, food & wine, culture, beach, wildlife, scenic drives)
+{
+  "title": "Trip title e.g. Ireland Guys Trip",
+  "destination": "City/Region, Country",
+  "region": "Europe",
+  "date": "Month Year",
+  "duration": "N days",
+  "travelers": "e.g. Guys trip, Family of 4, Couple",
+  "tags": ["food & wine", "culture"],
+  "loves": "3-5 sentences about highlights",
+  "doNext": "2-3 sentences of honest advice",
+  "airfare": [
+    { "item": "Airline and route", "detail": "~$X per person", "tip": "booking tip" }
+  ],
+  "hotels": [
+    { "item": "Hotel name", "detail": "N nights, ~$X/night", "tip": "tip" }
+  ],
+  "restaurants": [
+    { "item": "Restaurant name", "detail": "~$X per person", "tip": "tip" }
+  ],
+  "bars": [
+    { "item": "Bar name", "detail": "~$X per person", "tip": "tip" }
+  ],
+  "activities": [
+    { "item": "Activity name", "detail": "~$X per person", "tip": "tip" }
+  ],
+  "days": [
+    {
+      "day": 1,
+      "date": "Mar 14",
+      "title": "Arrival in Dublin",
+      "items": [
+        { "time": "2:00 PM", "type": "activity", "label": "What you did", "note": "" }
+      ]
+    }
+  ]
+}
 
-WHAT I LOVED:
-(3-5 sentences about highlights)
-
-WHAT I WOULD DO DIFFERENTLY:
-(2-3 sentences of honest advice)
-
-FLIGHTS:
-- Airline and route:
-- Approximate cost per person:
-- Tip:
-
-HOTELS:
-For each place:
-- Name:
-- Nights and cost:
-- Tip:
-
-RESTAURANTS:
-For each notable meal:
-- Name and location:
-- Cost:
-- Tip:
-
-BARS:
-- Name:
-- Cost:
-- Tip:
-
-ACTIVITIES:
-- Name:
-- Cost:
-- Tip:
-
-DAILY ITINERARY:
-Day N - Title - Date
-  Time - type - what you did - note
+Valid region values: Europe, Asia, North America, Central America, South America, Africa, Oceania
+Valid tag values: family-friendly, romantic, adventure, food & wine, culture, beach, wildlife, scenic drives
 
 Start by asking: Where did you go and when?`;
 
@@ -1417,114 +1411,42 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
   };
 
   const parseAIOutput = () => {
-    const raw = pastedText;
-    const text = raw.replace(/\*\*/g, "").replace(/\r\n/g, "\n");
-
-    const get = (label) => {
-      const re = new RegExp("[-*]?\\s*" + label + "[:\\s]+([^\\n]+)", "i");
-      const m = text.match(re);
-      return m ? m[1].replace(/^[-*\s]+/, "").trim() : "";
-    };
-
-    const getBlock = (label, ...nextLabels) => {
-      const escaped = nextLabels.map(l => l.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
-      const re = new RegExp(label + "[:\\s*]+([\\s\\S]*?)(?=" + escaped + "|$)", "i");
-      const m = text.match(re);
-      if (!m) return "";
-      return m[1].replace(/^[\s\n]+/, "").replace(/[\s\n]+$/, "").replace(/^[-*]\s*/gm, "").trim();
-    };
-
-    const parseCategory = (label, nextLabel) => {
-      const block = getBlock(label, nextLabel || "~~~END~~~");
-      if (!block) return [];
-      const rows = [];
-      const lines = block.split("\n").map(l => l.trim()).filter(Boolean);
-      let current = null;
-      lines.forEach(line => {
-        const isCostLine = /cost[:\s]|~\$|\$\d|budget|splurge|moderate|free|low cost|\d+ night/i.test(line) && !/tip[:\s]/i.test(line);
-        const isTipLine  = /^tip[:\s]/i.test(line);
-        const isHeader   = !isCostLine && !isTipLine && /^[A-Z]/.test(line) && !line.startsWith("-");
-        if (isHeader && line.length > 2) {
-          if (current) rows.push(current);
-          current = { item: line.replace(/^[-*]\s*/, ""), detail: "", tip: "" };
-        } else if (current && isCostLine) {
-          current.detail = line.replace(/.*?:\s*/, "").trim();
-        } else if (current && isTipLine) {
-          current.tip = line.replace(/^tip[:\s]*/i, "").trim();
-        } else if (current && !current.tip) {
-          current.tip = line.replace(/^[-*]\s*/, "").trim();
-        }
-      });
-      if (current) rows.push(current);
-      return rows.filter(r => r.item.length > 1);
-    };
-
-    const parseDays = () => {
-      const block = getBlock("DAILY ITINERARY", "~~~END~~~");
-      if (!block) return [];
-      const days = [];
-      const dayBlocks = block.split(/\n(?=Day \d+)/i);
-      dayBlocks.forEach(db => {
-        const lines = db.split("\n").map(l => l.replace(/\*\*/g,"").trim()).filter(Boolean);
-        if (!lines.length) return;
-        const hm = lines[0].match(/Day\s*(\d+)\s*[\u2013\-\u2014]\s*(.+?)\s*[\u2013\-\u2014]\s*(.+)/i) ||
-                   lines[0].match(/Day\s*(\d+)\s*[\u2013\-\u2014]\s*(.+)/i);
-        if (!hm) return;
-        const dayNum = parseInt(hm[1]);
-        const title  = (hm[2] || "").trim();
-        const dateStr = (hm[3] || "").trim();
-        const items = [];
-        lines.slice(1).forEach(line => {
-          const m = line.match(/^(.+?)\s*[\u2013\-\u2014]\s*(activity|dining|bar|hotel|transport|travel)\s*[\u2013\-\u2014]\s*(.+)/i);
-          if (m) {
-            const type = m[2].toLowerCase().replace("dining","restaurant").replace("travel","transport");
-            items.push({ time: m[1].trim(), type, label: m[3].trim(), note: "" });
-          }
-        });
-        days.push({ day: dayNum, date: dateStr, title, items });
-      });
-      return days;
-    };
-
-    const parseTags = () => {
-      const tagLine = get("Tags");
-      if (!tagLine) return [];
-      return tagLine.split(/[,;]/).map(t => t.trim().toLowerCase()).filter(t => TAGS.includes(t));
-    };
-
-    const parseRegion = () => {
-      const r = get("Region");
-      return REGIONS.find(reg => reg !== "All Regions" && r.toLowerCase().includes(reg.toLowerCase())) || "";
-    };
-
-    const airfare     = parseCategory("FLIGHTS",      "HOTELS");
-    const hotels      = parseCategory("HOTELS",       "RESTAURANTS");
-    const restaurants = parseCategory("RESTAURANTS",  "BARS");
-    const bars        = parseCategory("BARS",          "ACTIVITIES");
-    const activities  = parseCategory("ACTIVITIES",   "DAILY ITINERARY");
-    const days        = parseDays();
-    const tags        = parseTags();
-    const region      = parseRegion();
-
-    setForm(p => ({
-      ...p,
-      title:        get("Title")        || p.title,
-      destination:  get("Destination")  || p.destination,
-      region:       region              || p.region,
-      date:         get("Date")         || p.date,
-      duration:     get("Duration")     || p.duration,
-      travelers:    get("Who traveled") || p.travelers,
-      loves:        getBlock("WHAT I LOVED", "WHAT I WOULD DO DIFFERENTLY", "FLIGHTS") || p.loves,
-      doNext:       getBlock("WHAT I WOULD DO DIFFERENTLY", "FLIGHTS", "HOTELS")       || p.doNext,
-      tags:         tags.length        ? tags        : p.tags,
-      airfare:      airfare.length     ? airfare     : p.airfare,
-      hotels:       hotels.length      ? hotels      : p.hotels,
-      restaurants:  restaurants.length ? restaurants : p.restaurants,
-      bars:         bars.length        ? bars        : p.bars,
-      activities:   activities.length  ? activities  : p.activities,
-      days:         days.length        ? days        : p.days,
-    }));
-    setStep("form");
+    const raw = pastedText.trim();
+    // Strip markdown code fences if present
+    const cleaned = raw.replace(/```json\n?|```\n?/g, "").trim();
+    // Find JSON object
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      alert("Could not find structured data in the output. Make sure you copied the full response including the JSON block.");
+      return;
+    }
+    try {
+      const d = JSON.parse(jsonMatch[0]);
+      const ensureRows = (arr) => (Array.isArray(arr) && arr.length)
+        ? arr.map(r => ({ item: r.item||"", detail: r.detail||"", tip: r.tip||"" }))
+        : [{item:"",detail:"",tip:""}];
+      setForm(p => ({
+        ...p,
+        title:        d.title        || p.title,
+        destination:  d.destination  || p.destination,
+        region:       REGIONS.find(r => r !== "All Regions" && r.toLowerCase() === (d.region||"").toLowerCase()) || p.region,
+        date:         d.date         || p.date,
+        duration:     d.duration     || p.duration,
+        travelers:    d.travelers    || p.travelers,
+        tags:         Array.isArray(d.tags) && d.tags.length ? d.tags : p.tags,
+        loves:        d.loves        || p.loves,
+        doNext:       d.doNext       || p.doNext,
+        airfare:      ensureRows(d.airfare),
+        hotels:       ensureRows(d.hotels),
+        restaurants:  ensureRows(d.restaurants),
+        bars:         ensureRows(d.bars),
+        activities:   ensureRows(d.activities),
+        days:         Array.isArray(d.days) && d.days.length ? d.days : p.days,
+      }));
+      setStep("form");
+    } catch(e) {
+      alert("Could not parse the JSON output. Please make sure you copied the complete response.");
+    }
   };
 
   const updRow = (cat,i,f,v) => setForm(p => { const u=[...p[cat]]; u[i]={...u[i],[f]:v}; return {...p,[cat]:u}; });
