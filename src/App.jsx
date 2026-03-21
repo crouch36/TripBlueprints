@@ -2583,7 +2583,7 @@ export default function App() {
             <span style={{ fontSize:"9px", background:C.seafoamDeep, color:C.azureDeep, fontWeight:700, padding:"2px 7px", borderRadius:"20px", border:`1px solid ${C.tide}` }}>beta</span>
           </div>
           <div style={{ display:"flex", gap:"7px" }}>
-            {!isAdmin && <button onClick={() => openSubmit()} style={{ background:C.cta, color:C.ctaText, border:"none", borderRadius:"8px", padding:"7px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 3px 12px rgba(196,168,130,0.4)` }}>+ Submit a Trip</button>}
+            {!isAdmin && <button onClick={() => openSubmit()} style={{ background:"transparent", color:C.slate, border:`1.5px solid ${C.slate}`, borderRadius:"6px", padding:"7px 16px", fontSize:"12px", fontWeight:500, cursor:"pointer" }}>+ Submit a Trip</button>}
             {isAdmin && <button onClick={() => setShowQueue(true)} style={{ background:C.amberBg, color:C.amber, border:`1px solid ${C.amber}44`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>📋 Queue</button>}
             {isAdmin && <button onClick={() => setShowImport(true)} style={{ background:C.seafoam, color:C.slateMid, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>🤖 Smart Import</button>}
             {isAdmin && <button onClick={() => setShowAdd(true)} style={{ background:C.cta, color:C.ctaText, border:"none", borderRadius:"8px", padding:"7px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 3px 12px rgba(196,168,130,0.4)` }}>+ Add Trip</button>}
@@ -2610,10 +2610,10 @@ export default function App() {
             Planned by others. Perfected by you.
           </h1>
           <div style={{ display:"flex", gap:"10px", justifyContent:"center", alignItems:"center", flexWrap:"wrap", marginBottom:"16px" }}>
-            <button onClick={() => { const el = document.getElementById("trip-grid"); if(el) el.scrollIntoView({ behavior:"smooth" }); }} style={{ background:C.cta, color:C.ctaText, border:"none", borderRadius:"50px", padding:"11px 26px", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif", letterSpacing:"0.02em", boxShadow:`0 4px 18px rgba(196,168,130,0.45)` }}>
+            <button onClick={() => { const el = document.getElementById("trip-grid"); if(el) el.scrollIntoView({ behavior:"smooth" }); }} style={{ background:C.amber, color:C.slate, border:`1.5px solid ${C.amber}`, borderRadius:"6px", padding:"11px 26px", fontSize:"13px", fontWeight:500, cursor:"pointer", fontFamily:"'Nunito',sans-serif", letterSpacing:"0.01em" }}>
               Leverage a Copycat
             </button>
-            <button onClick={() => openSubmit()} style={{ background:"transparent", color:C.slateLight, border:`1.5px solid ${C.tide}`, borderRadius:"50px", padding:"11px 22px", fontSize:"12px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
+            <button onClick={() => openSubmit()} style={{ background:"transparent", color:C.slate, border:`1.5px solid ${C.slate}`, borderRadius:"6px", padding:"11px 26px", fontSize:"13px", fontWeight:500, cursor:"pointer", fontFamily:"'Nunito',sans-serif", letterSpacing:"0.01em" }}>
               Submit a Trip →
             </button>
           </div>
@@ -2695,7 +2695,7 @@ export default function App() {
                 <span style={{ fontSize:"12px", color:C.slateLight }}>Contributors</span>
                 <strong style={{ fontSize:"12px", color:C.slate }}>{[...new Set(allTrips.map(t=>t.author))].length}</strong>
               </div>
-              <button onClick={() => openSubmit()} style={{ width:"100%", padding:"9px", borderRadius:"8px", border:"none", background:C.cta, color:C.ctaText, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>+ Submit a Trip</button>
+              <button onClick={() => openSubmit()} style={{ width:"100%", padding:"9px", borderRadius:"6px", border:`1.5px solid ${C.slate}`, background:"transparent", color:C.slate, fontSize:"12px", fontWeight:500, cursor:"pointer" }}>+ Submit a Trip</button>
             </div>
           </aside>
         )}
