@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 
 // ── Supabase client ───────────────────────────────────────────────────────────
@@ -995,12 +996,12 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
   ).slice(0, 3);
 
   const handleShare = () => {
-    const url = `${window.location.origin}/#trip/${trip.id}`;
+    const url = `${window.location.origin}/trips/${trip.id}`;
     navigator.clipboard.writeText(url).then(() => { setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); });
   };
 
   const handleTwitterShare = () => {
-    const url = `${window.location.origin}/#trip/${trip.id}`;
+    const url = `${window.location.origin}/trips/${trip.id}`;
     const text = `Check out this trip: ${trip.title} on TripCopycat`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
   };
@@ -2268,6 +2269,7 @@ function LegalModal({ onClose }) {
 // ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
   const [dbTrips, setDbTrips] = useState([]);
   const [tripsLoading, setTripsLoading] = useState(true);
@@ -2325,26 +2327,12 @@ export default function App() {
 
   useEffect(() => { fetchTrips(); }, []);
 
-  const openTrip = (trip) => { setSelected(trip); window.history.pushState(null, "", `#trip/${trip.id}`); };
-  const closeTrip = () => { setSelected(null); window.history.pushState(null, "", window.location.pathname); };
+  const openTrip = (trip) => { setSelected(trip); };
+  const closeTrip = () => { setSelected(null); };
 
   const allTrips = [...dbTrips, ...trips];
 
-  // URL hash routing for individual trips
-  useEffect(() => {
-    window.__openTrip = (trip) => setSelected(trip);
-    const handleHash = () => {
-      const hash = window.location.hash;
-      const m = hash.match(/#trip\/(.+)/);
-      if (m && allTrips.length > 0) {
-        const found = allTrips.find(t => t.id === m[1] || slugify(t.title) === m[1]);
-        if (found) setSelected(found);
-      }
-    };
-    window.addEventListener("hashchange", handleHash);
-    handleHash();
-    return () => window.removeEventListener("hashchange", handleHash);
-  }, [allTrips]);
+  useEffect(() => { window.__openTrip = (trip) => setSelected(trip); }, []);
 
   // Auth state
   const [currentUser, setCurrentUser] = useState(null);
@@ -2626,7 +2614,7 @@ export default function App() {
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(300px,100%),1fr))", gap:"18px" }}>
                   {featuredTrips.map(trip => (
                     <div key={trip.id} style={{ position:"relative" }}>
-                      <TripCard trip={trip} onClick={openTrip} isBookmarked={bookmarks.includes(trip.id)} onBookmark={toggleBookmark} />
+                      <TripCard trip={trip} onClick={(t) => navigate(`/trips/${t.id}`)} isBookmarked={bookmarks.includes(trip.id)} onBookmark={toggleBookmark} />
                       {isAdmin && (
                         <div style={{ position:"absolute", top:"12px", right:"12px", display:"flex", gap:"6px", zIndex:10 }}>
                           <button onClick={e => { e.stopPropagation(); setEditingTrip(trip); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:C.azure, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>✏️</button>
@@ -2671,7 +2659,7 @@ export default function App() {
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(280px,100%),1fr))", gap:"18px" }}>
             {filtered.map(trip => (
               <div key={trip.id} style={{ position:"relative" }}>
-                <TripCard trip={trip} onClick={openTrip} isBookmarked={bookmarks.includes(trip.id)} onBookmark={toggleBookmark} />
+                <TripCard trip={trip} onClick={(t) => navigate(`/trips/${t.id}`)} isBookmarked={bookmarks.includes(trip.id)} onBookmark={toggleBookmark} />
                 {isAdmin && (
                   <div style={{ position:"absolute", top:"12px", right:"12px", display:"flex", gap:"6px", zIndex:10 }}>
                     <button onClick={e => { e.stopPropagation(); setEditingTrip(trip); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:C.azure, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>✏️</button>
