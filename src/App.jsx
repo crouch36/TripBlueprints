@@ -1288,6 +1288,14 @@ function AddTripModal({ onClose, onAdd }) {
 
 
 // ── Submit Trip Modal ─────────────────────────────────────────────────────────
+// ── Submit Trip Modal ─────────────────────────────────────────────────────────
+const EMPTY_FORM = {
+  title:"", destination:"", region:"Europe", duration:"", travelers:"", date:"", tags:[], loves:"", doNext:"",
+  airfare:[{item:"",detail:"",tip:""}], hotels:[{item:"",detail:"",tip:""}],
+  restaurants:[{item:"",detail:"",tip:""}], bars:[{item:"",detail:"",tip:""}],
+  activities:[{item:"",detail:"",tip:""}], days:[]
+};
+
 function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, prefillData }) {
   const [step, setStep] = useState(prefillData ? "form" : "prompt");
   const [pastedText, setPastedText] = useState("");
@@ -1305,13 +1313,6 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
   const [checkingDraft, setCheckingDraft] = useState(true);
   const photoRef = useRef(null);
   const autoSaveTimer = useRef(null);
-
-  const EMPTY_FORM = {
-    title:"", destination:"", region:"Europe", duration:"", travelers:"", date:"", tags:[], loves:"", doNext:"",
-    airfare:[{item:"",detail:"",tip:""}], hotels:[{item:"",detail:"",tip:""}],
-    restaurants:[{item:"",detail:"",tip:""}], bars:[{item:"",detail:"",tip:""}],
-    activities:[{item:"",detail:"",tip:""}], days:[]
-  };
 
   // Check for existing draft on mount
   useEffect(() => {
