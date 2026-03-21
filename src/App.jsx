@@ -1,5 +1,4 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { createClient } from "@supabase/supabase-js";
 
 // ── Supabase client ───────────────────────────────────────────────────────────
@@ -996,12 +995,12 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
   ).slice(0, 3);
 
   const handleShare = () => {
-    const url = `${window.location.origin}/trips/${trip.id}`;
+    const url = `${window.location.origin}/#trip/${trip.id}`;
     navigator.clipboard.writeText(url).then(() => { setShareCopied(true); setTimeout(() => setShareCopied(false), 2000); });
   };
 
   const handleTwitterShare = () => {
-    const url = `${window.location.origin}/trips/${trip.id}`;
+    const url = `${window.location.origin}/#trip/${trip.id}`;
     const text = `Check out this trip: ${trip.title} on TripCopycat`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank");
   };
@@ -1786,8 +1785,61 @@ function AdminQueueModal({ onClose, onApprove }) {
 // ── Auth & Profile Components ─────────────────────────────────────────────────
 
 // ── Auth Modal (Login / Register) ─────────────────────────────────────────────
+// ── Reset Password Modal ──────────────────────────────────────────────────────
+function ResetPasswordModal({ onClose }) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
+
+  const inp = { width:"100%", padding:"10px 13px", borderRadius:"8px", border:`1px solid ${C.tide}`, fontSize:"13px", outline:"none", boxSizing:"border-box", fontFamily:"inherit", background:C.white, color:C.slate, marginBottom:"10px" };
+
+  const handleReset = async () => {
+    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    if (password !== confirm) { setError("Passwords don't match."); return; }
+    setLoading(true); setError("");
+    const { error: updateError } = await supabase.auth.updateUser({ password });
+    setLoading(false);
+    if (updateError) { setError(updateError.message); return; }
+    setDone(true);
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(44,62,80,0.75)", zIndex:4000, display:"flex", alignItems:"center", justifyContent:"center", backdropFilter:"blur(8px)", padding:"20px" }}>
+      <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"400px", overflow:"hidden", boxShadow:`0 32px 64px rgba(28,43,58,0.25)`, border:`1px solid ${C.tide}` }}>
+        <div style={{ padding:"24px 28px", borderBottom:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif" }}>Set New Password</div>
+          <button onClick={onClose} style={{ background:C.seafoamDeep, border:"none", color:C.slateLight, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>×</button>
+        </div>
+        <div style={{ padding:"24px 28px" }}>
+          {done ? (
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:"36px", marginBottom:"12px" }}>✅</div>
+              <div style={{ fontSize:"14px", fontWeight:700, color:C.slate, marginBottom:"8px" }}>Password updated!</div>
+              <div style={{ fontSize:"12px", color:C.slateLight, marginBottom:"20px" }}>You can now sign in with your new password.</div>
+              <button onClick={onClose} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", background:C.cta, color:C.ctaText, fontWeight:700, fontSize:"14px", cursor:"pointer" }}>Done</button>
+            </div>
+          ) : (
+            <div>
+              <label style={{ fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" }}>New Password</label>
+              <input style={inp} type="password" placeholder="At least 6 characters" value={password} onChange={e=>setPassword(e.target.value)} />
+              <label style={{ fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" }}>Confirm Password</label>
+              <input style={inp} type="password" placeholder="Repeat your new password" value={confirm} onChange={e=>setConfirm(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleReset()} />
+              {error && <div style={{ fontSize:"12px", color:C.red, background:C.redBg, padding:"8px 12px", borderRadius:"7px", marginBottom:"10px" }}>{error}</div>}
+              <button onClick={handleReset} disabled={loading} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", background:loading?C.tide:C.cta, color:loading?C.muted:C.ctaText, fontWeight:700, fontSize:"14px", cursor:loading?"not-allowed":"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                {loading ? "Updating…" : "Set New Password"}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AuthModal({ onClose, onSuccess }) {
-  const [mode, setMode] = useState("login"); // login | register
+  const [mode, setMode] = useState("login"); // login | register | forgot | reset-sent
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -1803,7 +1855,6 @@ function AuthModal({ onClose, onSuccess }) {
     setLoading(true); setError("");
     const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
     if (signUpError) { setError(signUpError.message); setLoading(false); return; }
-    // Create profile record
     if (data.user) {
       await supabase.from("profiles").insert([{
         id: data.user.id,
@@ -1821,10 +1872,20 @@ function AuthModal({ onClose, onSuccess }) {
     setLoading(true); setError("");
     const { data, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
     if (loginError) { setError(loginError.message); setLoading(false); return; }
-    // Fetch profile
     const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single();
     setLoading(false);
     onSuccess({ user: data.user, displayName: profile?.display_name || email });
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) { setError("Please enter your email address."); return; }
+    setLoading(true); setError("");
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "https://tripcopycat.com/reset-password"
+    });
+    setLoading(false);
+    if (resetError) { setError(resetError.message); return; }
+    setMode("reset-sent");
   };
 
   return (
@@ -1832,41 +1893,77 @@ function AuthModal({ onClose, onSuccess }) {
       <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"400px", overflow:"hidden", boxShadow:`0 32px 64px rgba(28,43,58,0.25)`, border:`1px solid ${C.tide}` }}>
         <div style={{ padding:"24px 28px", borderBottom:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif" }}>
-            {mode === "login" ? "Welcome Back" : "Create Account"}
+            {mode === "login" ? "Welcome Back" : mode === "register" ? "Create Account" : mode === "forgot" ? "Reset Password" : "Check Your Email"}
           </div>
-          <button onClick={onClose} style={{ background:C.seafoamDeep, border:"none", color:C.slateLight, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>x</button>
+          <button onClick={onClose} style={{ background:C.seafoamDeep, border:"none", color:C.slateLight, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>×</button>
         </div>
         <div style={{ padding:"24px 28px" }}>
-          {/* Mode toggle */}
-          <div style={{ display:"flex", background:C.seafoam, borderRadius:"10px", padding:"3px", marginBottom:"20px" }}>
-            {[["login","Sign In"],["register","Create Account"]].map(([m,l]) => (
-              <button key={m} onClick={() => { setMode(m); setError(""); }} style={{ flex:1, padding:"8px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:700, background:mode===m?C.white:"transparent", color:mode===m?C.slate:C.muted, boxShadow:mode===m?`0 1px 4px rgba(28,43,58,0.1)`:"none", transition:"all .15s" }}>{l}</button>
-            ))}
-          </div>
-          {mode === "register" && (
-            <div>
-              <label style={{ fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" }}>Display Name</label>
-              <input style={inp} placeholder="How you'll appear on your trips" value={displayName} onChange={e=>setDisplayName(e.target.value)} />
+
+          {/* reset-sent confirmation */}
+          {mode === "reset-sent" && (
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:"36px", marginBottom:"12px" }}>📧</div>
+              <div style={{ fontSize:"14px", fontWeight:700, color:C.slate, marginBottom:"8px" }}>Reset link sent!</div>
+              <div style={{ fontSize:"12px", color:C.slateLight, lineHeight:1.6, marginBottom:"20px" }}>Check your email at <strong>{email}</strong> for a link to reset your password.</div>
+              <button onClick={onClose} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", background:C.cta, color:C.ctaText, fontWeight:700, fontSize:"14px", cursor:"pointer" }}>Done</button>
             </div>
           )}
-          <div>
-            <label style={{ fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" }}>Email</label>
-            <input style={inp} type="email" placeholder="your@email.com" value={email} onChange={e=>setEmail(e.target.value)} />
-          </div>
-          <div>
-            <label style={{ fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" }}>Password</label>
-            <input style={inp} type="password" placeholder={mode==="register"?"At least 6 characters":"Your password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&(mode==="login"?handleLogin():handleRegister())} />
-          </div>
-          {error && <div style={{ fontSize:"12px", color:C.red, background:C.redBg, padding:"8px 12px", borderRadius:"7px", marginBottom:"10px" }}>{error}</div>}
-          <button onClick={mode==="login"?handleLogin:handleRegister} disabled={loading} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", background:loading?C.tide:C.cta, color:loading?C.muted:C.ctaText, fontWeight:700, fontSize:"14px", cursor:loading?"not-allowed":"pointer", fontFamily:"'Nunito',sans-serif", transition:"all .15s" }}>
-            {loading ? "Please wait…" : mode==="login" ? "Sign In" : "Create Account"}
-          </button>
-          <div style={{ textAlign:"center", marginTop:"14px", fontSize:"12px", color:C.muted }}>
-            {mode==="login" ? "Don't have an account? " : "Already have an account? "}
-            <button onClick={() => { setMode(mode==="login"?"register":"login"); setError(""); }} style={{ background:"none", border:"none", color:C.amber, fontWeight:700, cursor:"pointer", fontSize:"12px" }}>
-              {mode==="login" ? "Create one" : "Sign in"}
-            </button>
-          </div>
+
+          {/* forgot password form */}
+          {mode === "forgot" && (
+            <div>
+              <div style={{ fontSize:"12px", color:C.slateLight, marginBottom:"16px", lineHeight:1.6 }}>Enter your email and we'll send you a link to reset your password.</div>
+              <label style={{ fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" }}>Email</label>
+              <input style={inp} type="email" placeholder="your@email.com" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleForgotPassword()} />
+              {error && <div style={{ fontSize:"12px", color:C.red, background:C.redBg, padding:"8px 12px", borderRadius:"7px", marginBottom:"10px" }}>{error}</div>}
+              <button onClick={handleForgotPassword} disabled={loading} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", background:loading?C.tide:C.cta, color:loading?C.muted:C.ctaText, fontWeight:700, fontSize:"14px", cursor:loading?"not-allowed":"pointer", fontFamily:"'Nunito',sans-serif" }}>
+                {loading ? "Sending…" : "Send Reset Link"}
+              </button>
+              <div style={{ textAlign:"center", marginTop:"14px" }}>
+                <button onClick={() => { setMode("login"); setError(""); }} style={{ background:"none", border:"none", color:C.amber, fontWeight:700, cursor:"pointer", fontSize:"12px" }}>← Back to Sign In</button>
+              </div>
+            </div>
+          )}
+
+          {/* login / register */}
+          {(mode === "login" || mode === "register") && (
+            <div>
+              <div style={{ display:"flex", background:C.seafoam, borderRadius:"10px", padding:"3px", marginBottom:"20px" }}>
+                {[["login","Sign In"],["register","Create Account"]].map(([m,l]) => (
+                  <button key={m} onClick={() => { setMode(m); setError(""); }} style={{ flex:1, padding:"8px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:700, background:mode===m?C.white:"transparent", color:mode===m?C.slate:C.muted, boxShadow:mode===m?`0 1px 4px rgba(28,43,58,0.1)`:"none", transition:"all .15s" }}>{l}</button>
+                ))}
+              </div>
+              {mode === "register" && (
+                <div>
+                  <label style={{ fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" }}>Display Name</label>
+                  <input style={inp} placeholder="How you'll appear on your trips" value={displayName} onChange={e=>setDisplayName(e.target.value)} />
+                </div>
+              )}
+              <div>
+                <label style={{ fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" }}>Email</label>
+                <input style={inp} type="email" placeholder="your@email.com" value={email} onChange={e=>setEmail(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" }}>Password</label>
+                <input style={inp} type="password" placeholder={mode==="register"?"At least 6 characters":"Your password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&(mode==="login"?handleLogin():handleRegister())} />
+              </div>
+              {error && <div style={{ fontSize:"12px", color:C.red, background:C.redBg, padding:"8px 12px", borderRadius:"7px", marginBottom:"10px" }}>{error}</div>}
+              <button onClick={mode==="login"?handleLogin:handleRegister} disabled={loading} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", background:loading?C.tide:C.cta, color:loading?C.muted:C.ctaText, fontWeight:700, fontSize:"14px", cursor:loading?"not-allowed":"pointer", fontFamily:"'Nunito',sans-serif", transition:"all .15s" }}>
+                {loading ? "Please wait…" : mode==="login" ? "Sign In" : "Create Account"}
+              </button>
+              {mode === "login" && (
+                <div style={{ textAlign:"center", marginTop:"10px" }}>
+                  <button onClick={() => { setMode("forgot"); setError(""); }} style={{ background:"none", border:"none", color:C.muted, fontWeight:600, cursor:"pointer", fontSize:"12px" }}>Forgot your password?</button>
+                </div>
+              )}
+              <div style={{ textAlign:"center", marginTop:"10px", fontSize:"12px", color:C.muted }}>
+                {mode==="login" ? "Don't have an account? " : "Already have an account? "}
+                <button onClick={() => { setMode(mode==="login"?"register":"login"); setError(""); }} style={{ background:"none", border:"none", color:C.amber, fontWeight:700, cursor:"pointer", fontSize:"12px" }}>
+                  {mode==="login" ? "Create one" : "Sign in"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -2269,7 +2366,6 @@ function LegalModal({ onClose }) {
 // ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
-  const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
   const [dbTrips, setDbTrips] = useState([]);
   const [tripsLoading, setTripsLoading] = useState(true);
@@ -2327,17 +2423,41 @@ export default function App() {
 
   useEffect(() => { fetchTrips(); }, []);
 
-  const openTrip = (trip) => { setSelected(trip); };
-  const closeTrip = () => { setSelected(null); };
+  const openTrip = (trip) => { setSelected(trip); window.history.pushState(null, "", `#trip/${trip.id}`); };
+  const closeTrip = () => { setSelected(null); window.history.pushState(null, "", window.location.pathname); };
 
   const allTrips = [...dbTrips, ...trips];
 
-  useEffect(() => { window.__openTrip = (trip) => setSelected(trip); }, []);
+  // URL hash routing for individual trips
+  useEffect(() => {
+    window.__openTrip = (trip) => setSelected(trip);
+    const handleHash = () => {
+      const hash = window.location.hash;
+      const m = hash.match(/#trip\/(.+)/);
+      if (m && allTrips.length > 0) {
+        const found = allTrips.find(t => t.id === m[1] || slugify(t.title) === m[1]);
+        if (found) setSelected(found);
+      }
+    };
+    window.addEventListener("hashchange", handleHash);
+    handleHash();
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, [allTrips]);
 
   // Auth state
   const [currentUser, setCurrentUser] = useState(null);
   const [currentDisplayName, setCurrentDisplayName] = useState("");
   const [showAuth, setShowAuth] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+
+  // Detect Supabase password reset redirect
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes("type=recovery")) {
+      setShowResetPassword(true);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
   const [viewingProfile, setViewingProfile] = useState(null);
 
   useEffect(() => {
@@ -2614,7 +2734,7 @@ export default function App() {
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(300px,100%),1fr))", gap:"18px" }}>
                   {featuredTrips.map(trip => (
                     <div key={trip.id} style={{ position:"relative" }}>
-                      <TripCard trip={trip} onClick={(t) => navigate(`/trips/${t.id}`)} isBookmarked={bookmarks.includes(trip.id)} onBookmark={toggleBookmark} />
+                      <TripCard trip={trip} onClick={openTrip} isBookmarked={bookmarks.includes(trip.id)} onBookmark={toggleBookmark} />
                       {isAdmin && (
                         <div style={{ position:"absolute", top:"12px", right:"12px", display:"flex", gap:"6px", zIndex:10 }}>
                           <button onClick={e => { e.stopPropagation(); setEditingTrip(trip); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:C.azure, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>✏️</button>
@@ -2659,7 +2779,7 @@ export default function App() {
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(280px,100%),1fr))", gap:"18px" }}>
             {filtered.map(trip => (
               <div key={trip.id} style={{ position:"relative" }}>
-                <TripCard trip={trip} onClick={(t) => navigate(`/trips/${t.id}`)} isBookmarked={bookmarks.includes(trip.id)} onBookmark={toggleBookmark} />
+                <TripCard trip={trip} onClick={openTrip} isBookmarked={bookmarks.includes(trip.id)} onBookmark={toggleBookmark} />
                 {isAdmin && (
                   <div style={{ position:"absolute", top:"12px", right:"12px", display:"flex", gap:"6px", zIndex:10 }}>
                     <button onClick={e => { e.stopPropagation(); setEditingTrip(trip); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:C.azure, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>✏️</button>
@@ -2704,6 +2824,7 @@ export default function App() {
       {showImport    && <SmartImportHub onClose={() => setShowImport(false)} onPhotoComplete={(data) => { setPhotoImportData(data); setShowImport(false); openSubmit(); }} />}
       {showSubmit    && <SubmitTripModal onClose={() => { setShowSubmit(false); setPhotoImportData(null); }} currentUser={currentUser} displayName={currentDisplayName} onSubmitSuccess={fetchTrips} prefillData={photoImportData} />}
       {showAuth      && <AuthModal onClose={() => setShowAuth(false)} onSuccess={handleAuthSuccess} />}
+      {showResetPassword && <ResetPasswordModal onClose={() => setShowResetPassword(false)} />}
       {viewingProfile && <ProfilePage authorName={viewingProfile} allTrips={allTrips} onClose={() => setViewingProfile(null)} onTripClick={openTrip} currentUser={currentUser} onEditTrip={(trip) => setEditingTrip(trip)} onDeleteTrip={(trip) => setConfirmDelete(trip)} />}
       {showQueue     && <AdminQueueModal onClose={() => setShowQueue(false)} onApprove={fetchTrips} />}
       {showAdminLogin && <AdminLoginModal onSuccess={handleAdminLogin} onClose={() => setShowAdminLogin(false)} />}
