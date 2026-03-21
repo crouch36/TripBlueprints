@@ -1198,21 +1198,11 @@ function TripCard({ trip, onClick, isBookmarked, onBookmark }) {
 function AddTripModal({ onClose, onAdd }) {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-    title: prefillData?.destination ? `${prefillData.destination} Trip` : "",
-    destination: prefillData?.destination || "",
-    region: prefillData?.region || "Europe",
-    duration: prefillData?.duration || "",
-    travelers: prefillData?.travelers || "",
-    date: "",
-    tags: prefillData?.tags || [],
-    loves: prefillData?.loves || "",
-    doNext: prefillData?.doNext || "",
-    airfare: [{item:"",detail:"",tip:""}],
-    hotels: prefillData?.hotels?.length ? prefillData.hotels : [{item:"",detail:"",tip:""}],
-    restaurants: prefillData?.restaurants?.length ? prefillData.restaurants : [{item:"",detail:"",tip:""}],
-    bars: prefillData?.bars?.length ? prefillData.bars : [{item:"",detail:"",tip:""}],
-    activities: prefillData?.activities?.length ? prefillData.activities : [{item:"",detail:"",tip:""}],
-    days: prefillData?.days || []
+    title: "", destination: "", region: "Europe", duration: "", travelers: "",
+    date: "", tags: [], loves: "", doNext: "",
+    airfare: [{item:"",detail:"",tip:""}], hotels: [{item:"",detail:"",tip:""}],
+    restaurants: [{item:"",detail:"",tip:""}], bars: [{item:"",detail:"",tip:""}],
+    activities: [{item:"",detail:"",tip:""}], days: []
   });
 
   const updRow   = (cat,i,f,v) => setForm(p => { const u=[...p[cat]]; u[i]={...u[i],[f]:v}; return {...p,[cat]:u}; });
@@ -1309,7 +1299,56 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
   const [coverPhoto, setCoverPhoto] = useState(null);
   const [coverPhotoPreview, setCoverPhotoPreview] = useState(null);
   const [photoError, setPhotoError] = useState("");
+  const [draftExists, setDraftExists] = useState(false);
+  const [draftSaving, setDraftSaving] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [checkingDraft, setCheckingDraft] = useState(true);
   const photoRef = useRef(null);
+  const autoSaveTimer = useRef(null);
+
+  const EMPTY_FORM = {
+    title:"", destination:"", region:"Europe", duration:"", travelers:"", date:"", tags:[], loves:"", doNext:"",
+    airfare:[{item:"",detail:"",tip:""}], hotels:[{item:"",detail:"",tip:""}],
+    restaurants:[{item:"",detail:"",tip:""}], bars:[{item:"",detail:"",tip:""}],
+    activities:[{item:"",detail:"",tip:""}], days:[]
+  };
+
+  // Check for existing draft on mount
+  useEffect(() => {
+    if (!currentUser) { setCheckingDraft(false); return; }
+    supabase.from("drafts").select("form_data, updated_at").eq("user_id", currentUser.id).single()
+      .then(({ data }) => {
+        if (data?.form_data) setDraftExists(true);
+        setCheckingDraft(false);
+      });
+  }, []);
+
+  const saveDraft = async (formData) => {
+    if (!currentUser) return;
+    setDraftSaving(true);
+    await supabase.from("drafts").upsert({
+      user_id: currentUser.id,
+      form_data: formData,
+      updated_at: new Date().toISOString()
+    }, { onConflict: "user_id" });
+    setDraftSaving(false);
+    setDraftSaved(true);
+    setTimeout(() => setDraftSaved(false), 2000);
+  };
+
+  const loadDraft = async () => {
+    const { data } = await supabase.from("drafts").select("form_data").eq("user_id", currentUser.id).single();
+    if (data?.form_data) {
+      setForm(data.form_data);
+      setDraftExists(false);
+      setStep("form");
+    }
+  };
+
+  const clearDraft = async () => {
+    await supabase.from("drafts").delete().eq("user_id", currentUser.id);
+    setDraftExists(false);
+  };
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -1331,12 +1370,31 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
     const { data } = supabase.storage.from("trip-photos").getPublicUrl(path);
     return data.publicUrl;
   };
-  const [form, setForm] = useState({
-    title:"", destination:"", region:"Europe", duration:"", travelers:"", date:"", tags:[], loves:"", doNext:"",
-    airfare:[{item:"",detail:"",tip:""}], hotels:[{item:"",detail:"",tip:""}],
-    restaurants:[{item:"",detail:"",tip:""}], bars:[{item:"",detail:"",tip:""}],
-    activities:[{item:"",detail:"",tip:""}], days:[]
-  });
+  const [form, setForm] = useState(() => prefillData ? {
+    title: prefillData?.destination ? `${prefillData.destination} Trip` : "",
+    destination: prefillData?.destination || "",
+    region: prefillData?.region || "Europe",
+    duration: prefillData?.duration || "",
+    travelers: prefillData?.travelers || "",
+    date: "",
+    tags: prefillData?.tags || [],
+    loves: prefillData?.loves || "",
+    doNext: prefillData?.doNext || "",
+    airfare: [{item:"",detail:"",tip:""}],
+    hotels: prefillData?.hotels?.length ? prefillData.hotels : [{item:"",detail:"",tip:""}],
+    restaurants: prefillData?.restaurants?.length ? prefillData.restaurants : [{item:"",detail:"",tip:""}],
+    bars: prefillData?.bars?.length ? prefillData.bars : [{item:"",detail:"",tip:""}],
+    activities: prefillData?.activities?.length ? prefillData.activities : [{item:"",detail:"",tip:""}],
+    days: prefillData?.days || []
+  } : EMPTY_FORM);
+
+  // Auto-save draft 3 seconds after last form change
+  useEffect(() => {
+    if (step !== "form" || !currentUser) return;
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => saveDraft(form), 3000);
+    return () => clearTimeout(autoSaveTimer.current);
+  }, [form, step]);
 
   const inp = { width:"100%", padding:"8px 11px", borderRadius:"7px", border:`1px solid ${C.tide}`, fontSize:"12px", outline:"none", boxSizing:"border-box", fontFamily:"inherit", background:C.white, color:C.slate };
   const lbl = { fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" };
@@ -1476,6 +1534,8 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
       ai_flag_reason: result.flags.join("; "),
       user_id: currentUser?.id || null
     }]);
+    // Clear draft on successful submit
+    if (currentUser) await supabase.from("drafts").delete().eq("user_id", currentUser.id);
     setStep("flagged");
   };
 
@@ -1487,11 +1547,34 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
             <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif" }}>Submit a Trip</div>
             <div style={{ fontSize:"11px", color:C.slateLight, marginTop:"2px" }}>Share your trip with the TripCopycat community</div>
           </div>
-          <button onClick={onClose} style={{ background:C.seafoamDeep, border:"none", color:C.slateLight, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>x</button>
+          <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+            {step === "form" && (
+              <span style={{ fontSize:"10px", color: draftSaving ? C.amber : draftSaved ? C.green : C.muted, fontWeight:600, transition:"color .3s" }}>
+                {draftSaving ? "Saving…" : draftSaved ? "✓ Draft saved" : "Auto-saving"}
+              </span>
+            )}
+            {step === "form" && (
+              <button onClick={() => saveDraft(form)} style={{ fontSize:"11px", padding:"5px 12px", borderRadius:"6px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateMid, cursor:"pointer", fontWeight:600 }}>Save Draft</button>
+            )}
+            <button onClick={onClose} style={{ background:C.seafoamDeep, border:"none", color:C.slateLight, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>×</button>
+          </div>
         </div>
 
         {step === "prompt" && (
           <div style={{ padding:"28px", maxHeight:"70vh", overflowY:"auto" }}>
+            {/* Draft resume banner */}
+            {draftExists && !checkingDraft && (
+              <div style={{ background:C.amberBg, border:`1px solid ${C.amber}`, borderRadius:"12px", padding:"14px 18px", marginBottom:"20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px", flexWrap:"wrap" }}>
+                <div>
+                  <div style={{ fontSize:"13px", fontWeight:700, color:C.slate, marginBottom:"2px" }}>📝 You have a saved draft</div>
+                  <div style={{ fontSize:"11px", color:C.slateMid }}>Pick up where you left off or start fresh.</div>
+                </div>
+                <div style={{ display:"flex", gap:"8px" }}>
+                  <button onClick={loadDraft} style={{ padding:"7px 16px", borderRadius:"7px", border:"none", background:C.amber, color:C.white, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>Continue Draft →</button>
+                  <button onClick={clearDraft} style={{ padding:"7px 12px", borderRadius:"7px", border:`1px solid ${C.tide}`, background:C.white, color:C.muted, fontSize:"12px", cursor:"pointer" }}>Discard</button>
+                </div>
+              </div>
+            )}
             <div style={{ textAlign:"center", marginBottom:"24px" }}>
               <div style={{ fontSize:"32px", marginBottom:"10px" }}>✈️</div>
               <div style={{ fontSize:"16px", fontWeight:700, color:C.slate, marginBottom:"6px" }}>How would you like to build your itinerary?</div>
@@ -2375,6 +2458,14 @@ export default function App() {
   const [showSubmit, setShowSubmit] = useState(false);
   const [photoImportData, setPhotoImportData] = useState(null);
   const [pendingSubmit, setPendingSubmit] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
+
+  // Check for draft when user logs in
+  useEffect(() => {
+    if (!currentUser) { setHasDraft(false); return; }
+    supabase.from("drafts").select("id").eq("user_id", currentUser.id).single()
+      .then(({ data }) => setHasDraft(!!data));
+  }, [currentUser]);
 
   // Force login before submitting
   const openSubmit = () => {
@@ -2583,7 +2674,10 @@ export default function App() {
             <span style={{ fontSize:"9px", background:C.seafoamDeep, color:C.azureDeep, fontWeight:700, padding:"2px 7px", borderRadius:"20px", border:`1px solid ${C.tide}` }}>beta</span>
           </div>
           <div style={{ display:"flex", gap:"7px" }}>
-            {!isAdmin && <button onClick={() => openSubmit()} style={{ background:"transparent", color:C.slate, border:`1.5px solid ${C.slate}`, borderRadius:"6px", padding:"6px 14px", fontSize:"11px", fontWeight:500, cursor:"pointer", whiteSpace:"nowrap" }}>+ Submit a Trip</button>}
+            {!isAdmin && <button onClick={() => openSubmit()} style={{ background:"transparent", color:C.slate, border:`1.5px solid ${C.slate}`, borderRadius:"6px", padding:"6px 14px", fontSize:"11px", fontWeight:500, cursor:"pointer", whiteSpace:"nowrap", position:"relative" }}>
+              + Submit a Trip
+              {hasDraft && <span style={{ position:"absolute", top:"-4px", right:"-4px", width:"8px", height:"8px", borderRadius:"50%", background:C.amber, border:`1.5px solid ${C.white}` }} />}
+            </button>}
             {isAdmin && <button onClick={() => setShowQueue(true)} style={{ background:C.amberBg, color:C.amber, border:`1px solid ${C.amber}44`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>📋 Queue</button>}
             {isAdmin && <button onClick={() => setShowImport(true)} style={{ background:C.seafoam, color:C.slateMid, border:`1px solid ${C.tide}`, borderRadius:"8px", padding:"7px 14px", fontSize:"12px", fontWeight:600, cursor:"pointer" }}>🤖 Smart Import</button>}
             {isAdmin && <button onClick={() => setShowAdd(true)} style={{ background:C.cta, color:C.ctaText, border:"none", borderRadius:"8px", padding:"7px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 3px 12px rgba(196,168,130,0.4)` }}>+ Add Trip</button>}
