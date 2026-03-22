@@ -1,8 +1,5 @@
 {
-  "functions": {
-    "api/og.jsx": {}
-  },
   "rewrites": [
-    { "source": "/((?!api/)(?!sitemap.xml$).*)", "destination": "/index.html" }
+    { "source": "/((?!api/)(?!sitemap\\.xml$).*)", "destination": "/index.html" }
   ]
 }
