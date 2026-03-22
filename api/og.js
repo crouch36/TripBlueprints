@@ -167,7 +167,7 @@ const { searchParams } = new URL(req.url, 'https://tripcopycat.com');
         : null
     ),
 
-    // Bottom branding strip — TripCopycat_OG.png full-width banner
+    // Bottom branding strip — TripCopycat_OG.webp full-width banner
     React.createElement(
       "div",
       {
@@ -185,7 +185,7 @@ const { searchParams } = new URL(req.url, 'https://tripcopycat.com');
         },
       },
       React.createElement("img", {
-        src: `${SITE_URL}/TripCopycat_OG.png`,
+        src: `${SITE_URL}/TripCopycat_OG.webp`,
         style: {
           width: "1200px",
           height: `${STRIP_H}px`,
