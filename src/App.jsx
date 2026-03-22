@@ -1629,6 +1629,19 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
                 style={{ width:"100%", minHeight:"90px", padding:"10px 12px", borderRadius:"8px", border:`1px solid ${C.tide}`, fontSize:"12px", outline:"none", boxSizing:"border-box", fontFamily:"inherit", background:C.white, color:C.slate, resize:"vertical", lineHeight:1.6 }}
               />
 
+              {/* Document upload */}
+              <div style={{ display:"flex", alignItems:"center", gap:"8px", marginTop:"14px", marginBottom:"8px" }}>
+                <span style={{ fontSize:"18px" }}>📄</span>
+                <div style={{ fontSize:"13px", fontWeight:700, color:C.slate }}>Got a PDF or Word doc? <span style={{ fontSize:"11px", fontWeight:400, color:C.muted }}>(optional)</span></div>
+              </div>
+              <div style={{ fontSize:"11px", color:C.slateMid, marginBottom:"8px", lineHeight:1.6 }}>
+                Have an itinerary, booking confirmation, or travel doc? Upload it and we'll extract the text automatically — no copy-pasting needed.
+              </div>
+              <DocExtractor onExtracted={(text) => {
+                const ta = document.getElementById("hybrid-brain-dump");
+                if (ta) { ta.value = (ta.value ? ta.value + "\n\n" : "") + text; }
+              }} />
+
               <div style={{ display:"flex", alignItems:"center", gap:"8px", marginTop:"14px", marginBottom:"10px" }}>
                 <span style={{ fontSize:"18px" }}>📸</span>
                 <div style={{ fontSize:"13px", fontWeight:700, color:C.slate }}>Step 2 — Add photos <span style={{ fontSize:"11px", fontWeight:400, color:C.muted }}>(optional but powerful)</span></div>
@@ -1642,7 +1655,7 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
                 onClick={() => {
                   const text = document.getElementById("hybrid-brain-dump")?.value || "";
                   const photos = window.__hybridPhotos || [];
-                  if (!text.trim() && !photos.length) { alert("Please add some text or photos to get started."); return; }
+                  if (!text.trim() && !photos.length) { alert("Please add some text, a document, or photos to get started."); return; }
                   setStep("hybrid-processing");
                   window.__hybridText = text;
                 }}
@@ -1677,30 +1690,79 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
             text={typeof window !== "undefined" ? window.__hybridText || "" : ""}
             photos={typeof window !== "undefined" ? window.__hybridPhotos || [] : []}
             onComplete={(data) => {
+              const isSupplement = step === "hybrid-processing" && (window.__supplementPhotos?.length > 0);
+              const mergeRows = (existing, incoming) => {
+                if (!incoming?.length) return existing;
+                // Start with incoming (which includes AI-enhanced versions of existing items)
+                // but keep any existing items that weren't mentioned in the photos
+                const incomingNames = incoming.map(r => r.item.toLowerCase());
+                const keptExisting = existing.filter(r =>
+                  r.item && !incomingNames.some(n => {
+                    // Check if incoming item is a more specific version of this existing item
+                    const existingLower = r.item.toLowerCase();
+                    return n === existingLower || n.includes(existingLower) || existingLower.includes(n);
+                  })
+                );
+                return [...incoming, ...keptExisting];
+              };
+              // For text fields: prefer the longer/more specific value
+              const betterText = (a, b) => {
+                if (!a) return b;
+                if (!b) return a;
+                return b.length > a.length ? b : a;
+              };
               setForm(p => ({
                 ...p,
-                title:        data.title        || p.title,
-                destination:  data.destination  || p.destination,
+                title:        betterText(p.title, data.title),
+                destination:  betterText(p.destination, data.destination),
                 region:       data.region       || p.region,
-                date:         data.date         || p.date,
-                duration:     data.duration     || p.duration,
-                travelers:    data.travelers    || p.travelers,
-                tags:         data.tags?.length ? data.tags : p.tags,
-                loves:        data.loves        || p.loves,
-                doNext:       data.doNext       || p.doNext,
-                airfare:      data.airfare?.length ? data.airfare : p.airfare,
-                hotels:       data.hotels?.length ? data.hotels : p.hotels,
-                restaurants:  data.restaurants?.length ? data.restaurants : p.restaurants,
-                bars:         data.bars?.length ? data.bars : p.bars,
-                activities:   data.activities?.length ? data.activities : p.activities,
-                days:         data.days?.length ? data.days : p.days,
+                date:         betterText(p.date, data.date),
+                duration:     betterText(p.duration, data.duration),
+                travelers:    betterText(p.travelers, data.travelers),
+                tags:         data.tags?.length ? [...new Set([...p.tags, ...data.tags])] : p.tags,
+                loves:        betterText(p.loves, data.loves),
+                doNext:       betterText(p.doNext, data.doNext),
+                airfare:      mergeRows(p.airfare, data.airfare),
+                hotels:       mergeRows(p.hotels, data.hotels),
+                restaurants:  mergeRows(p.restaurants, data.restaurants),
+                bars:         mergeRows(p.bars, data.bars),
+                activities:   mergeRows(p.activities, data.activities),
+                days:         data.days?.length && !p.days?.length ? data.days : p.days,
               }));
               window.__hybridPhotos = [];
+              window.__supplementPhotos = [];
               window.__hybridText = "";
               setStep("form");
             }}
-            onBack={() => setStep("prompt")}
+            onBack={() => setStep(window.__supplementPhotos?.length ? "photo-supplement" : "prompt")}
           />
+        )}
+
+        {step === "photo-supplement" && (
+          <div style={{ padding:"24px 28px" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"16px" }}>
+              <button onClick={() => setStep("form")} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:"20px", padding:0, lineHeight:1 }}>←</button>
+              <div>
+                <div style={{ fontSize:"15px", fontWeight:700, color:C.slate }}>Supplement with photos</div>
+                <div style={{ fontSize:"11px", color:C.slateLight, marginTop:"2px" }}>AI will read your photos and fill in anything missing from your current form — without overwriting what's already there.</div>
+              </div>
+            </div>
+            <div style={{ background:C.amberBg, border:`1px solid ${C.amber}44`, borderRadius:"10px", padding:"10px 14px", marginBottom:"16px", fontSize:"11px", color:C.slateMid, lineHeight:1.6 }}>
+              <strong style={{ color:C.slate }}>These photos are for AI analysis only</strong> — they won't be published. AI will enhance vague entries with specific names from signage (e.g. "a hotel" → "The Meyrick Hotel"), add new venues it spots, and fill any gaps — without removing data you've already entered.
+            </div>
+            <HybridPhotoSelector onChange={(files) => { window.__supplementPhotos = files; }} />
+            <button
+              onClick={() => {
+                const photos = window.__supplementPhotos || [];
+                if (!photos.length) { alert("Please select at least one photo."); return; }
+                window.__hybridPhotos = photos;
+                window.__hybridText = `Here is what I already have filled in about this trip. For each field, use the photos to ENHANCE or make more specific — if a photo shows a venue name that matches a vague description, use the specific name. Add new items the photos reveal that aren't already listed. Keep existing specific data as-is.\n\nTitle: ${form.title}\nDestination: ${form.destination}\nRegion: ${form.region}\nDuration: ${form.duration}\nDate: ${form.date}\nTravelers: ${form.travelers}\nLoves: ${form.loves}\nDo Next: ${form.doNext}\nHotels already listed: ${form.hotels?.filter(h=>h.item).map(h=>h.item).join(", ")||"none"}\nRestaurants already listed: ${form.restaurants?.filter(r=>r.item).map(r=>r.item).join(", ")||"none"}\nBars already listed: ${form.bars?.filter(b=>b.item).map(b=>b.item).join(", ")||"none"}\nActivities already listed: ${form.activities?.filter(a=>a.item).map(a=>a.item).join(", ")||"none"}\n\nFor the JSON output: include ALL items (existing + new from photos). If a photo reveals the specific name of something listed vaguely (e.g. "a hotel" → "The Meyrick Hotel"), return the improved version.`;
+                setStep("hybrid-processing");
+              }}
+              style={{ width:"100%", marginTop:"14px", padding:"12px", borderRadius:"8px", border:"none", background:C.cta, color:C.ctaText, fontSize:"13px", fontWeight:700, cursor:"pointer" }}>
+              Analyse Photos & Fill Gaps →
+            </button>
+          </div>
         )}
 
         {step === "photo-import" && (
@@ -1751,11 +1813,17 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
 
         {step === "form" && (
           <div style={{ padding:"20px 28px", maxHeight:"65vh", overflowY:"auto" }}>
-            <div style={{ background:C.seafoam, border:`1px solid ${C.tide}`, borderRadius:"10px", padding:"10px 14px", marginBottom:"14px", display:"flex", alignItems:"flex-start", gap:"10px" }}>
-              <span style={{ fontSize:"16px", flexShrink:0 }}>💾</span>
-              <div style={{ fontSize:"11px", color:C.slateMid, lineHeight:1.6 }}>
-                <strong style={{ color:C.slate }}>Fill in what you know — come back anytime.</strong> Your draft saves automatically. You don't need to complete everything now. Submit a partial trip and edit it later, or save a draft and return when you have more details.
+            <div style={{ background:C.seafoam, border:`1px solid ${C.tide}`, borderRadius:"10px", padding:"10px 14px", marginBottom:"14px" }}>
+              <div style={{ display:"flex", alignItems:"flex-start", gap:"10px", marginBottom:"10px" }}>
+                <span style={{ fontSize:"16px", flexShrink:0 }}>💾</span>
+                <div style={{ fontSize:"11px", color:C.slateMid, lineHeight:1.6 }}>
+                  <strong style={{ color:C.slate }}>Fill in what you know — come back anytime.</strong> Your draft saves automatically. You don't need to complete everything now. Submit a partial trip and edit it later, or save a draft and return when you have more details.
+                </div>
               </div>
+              <button onClick={() => setStep("photo-supplement")} style={{ width:"100%", padding:"9px 14px", borderRadius:"8px", border:`1.5px solid ${C.amber}`, background:C.amberBg, color:C.slate, fontSize:"12px", fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:"8px", justifyContent:"center" }}>
+                <span style={{ fontSize:"14px" }}>📸</span>
+                Supplement with photos → let AI fill in missing details
+              </button>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"14px" }}>
               <div style={{ gridColumn:"1/-1" }}><label style={lbl}>Trip Title</label><input style={inp} value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} /></div>
@@ -2176,6 +2244,127 @@ Valid tags: family-friendly, romantic, adventure, food & wine, culture, beach, w
         <div style={{ marginTop:"8px", fontSize:"11px", color:"#BDC3C7" }}>{progress}%</div>
       </div>
       <button onClick={onBack} style={{ padding:"7px 16px", borderRadius:"7px", border:"1px solid #BDC3C7", background:"#fff", color:"#7F8C8D", fontSize:"11px", cursor:"pointer" }}>Cancel</button>
+    </div>
+  );
+}
+
+// ── Doc Extractor ─────────────────────────────────────────────────────────────
+function DocExtractor({ onExtracted }) {
+  const [status, setStatus] = useState(null);
+  const [fileName, setFileName] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [libsLoaded, setLibsLoaded] = useState(false);
+  const ref = useRef();
+
+  useEffect(() => {
+    const loadScript = (src) => new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    Promise.all([
+      loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"),
+      loadScript("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js")
+    ]).then(() => {
+      if (window.pdfjsLib) window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      setLibsLoaded(true);
+    }).catch(() => setLibsLoaded(true));
+  }, []);
+
+  const extractPDF = async (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(e.target.result) }).promise;
+          let text = "";
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            text += content.items.map(item => item.str).join(" ") + "\n";
+          }
+          resolve(text.trim());
+        } catch(err) { reject(err); }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const extractDOCX = async (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const result = await window.mammoth.extractRawText({ arrayBuffer: e.target.result });
+          resolve(result.value.trim());
+        } catch(err) { reject(err); }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const handleFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setFileName(file.name);
+    setStatus("loading");
+    setErrorMsg("");
+    try {
+      let text = "";
+      if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+        if (!window.pdfjsLib) throw new Error("PDF library still loading — try again in a moment.");
+        text = await extractPDF(file);
+      } else if (file.name.toLowerCase().endsWith(".docx") || file.type.includes("wordprocessingml")) {
+        if (!window.mammoth) throw new Error("DOCX library still loading — try again in a moment.");
+        text = await extractDOCX(file);
+      } else {
+        throw new Error("Please use a PDF or DOCX file.");
+      }
+      if (!text) throw new Error("Could not extract text from this file — it may be image-based.");
+      onExtracted(text);
+      setStatus("done");
+    } catch(err) {
+      setErrorMsg(err.message);
+      setStatus("error");
+    }
+    e.target.value = "";
+  };
+
+  return (
+    <div>
+      <input ref={ref} type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style={{ display:"none" }} onChange={handleFile} />
+      {status === "done" ? (
+        <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"10px 12px", background:"#EAF3DE", borderRadius:"8px", border:"1px solid #97C459" }}>
+          <span style={{ fontSize:"16px" }}>✅</span>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:"12px", fontWeight:700, color:"#3B6D11" }}>Text extracted from {fileName}</div>
+            <div style={{ fontSize:"10px", color:"#639922" }}>Added to your brain dump above</div>
+          </div>
+          <button onClick={() => { setStatus(null); setFileName(""); }} style={{ fontSize:"10px", color:"#639922", background:"none", border:"none", cursor:"pointer", textDecoration:"underline" }}>Remove</button>
+        </div>
+      ) : status === "loading" ? (
+        <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"10px 12px", background:C.seafoam, borderRadius:"8px", border:`1px solid ${C.tide}` }}>
+          <span style={{ fontSize:"16px" }}>⏳</span>
+          <div style={{ fontSize:"12px", color:C.slateMid }}>Extracting text from {fileName}…</div>
+        </div>
+      ) : status === "error" ? (
+        <div style={{ padding:"10px 12px", background:"#FCEBEB", borderRadius:"8px", border:"1px solid #F09595", fontSize:"12px", color:"#A32D2D" }}>
+          {errorMsg} <button onClick={() => ref.current.click()} style={{ marginLeft:"8px", color:"#A32D2D", background:"none", border:"none", cursor:"pointer", textDecoration:"underline", fontSize:"12px" }}>Try again</button>
+        </div>
+      ) : (
+        <div onClick={() => libsLoaded ? ref.current.click() : null} style={{ border:`2px dashed ${C.tide}`, borderRadius:"8px", padding:"12px 16px", cursor:libsLoaded?"pointer":"wait", background:C.white, display:"flex", alignItems:"center", gap:"10px" }}
+          onMouseEnter={e=>{ if(libsLoaded) e.currentTarget.style.borderColor=C.amber; }}
+          onMouseLeave={e=>e.currentTarget.style.borderColor=C.tide}>
+          <span style={{ fontSize:"24px" }}>📎</span>
+          <div>
+            <div style={{ fontSize:"12px", fontWeight:600, color:C.slate }}>{libsLoaded ? "Upload a PDF or Word document" : "Loading document reader…"}</div>
+            <div style={{ fontSize:"10px", color:C.muted, marginTop:"2px" }}>Booking confirmations, travel itineraries, email printouts — text extracted automatically</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
