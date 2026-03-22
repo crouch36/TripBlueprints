@@ -1,7 +1,5 @@
 import { ImageResponse } from "@vercel/og";
 
-export const config = { runtime: "edge" };
-
 const SUPABASE_URL = "https://wnjxtjeospeblvqdqsdj.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_8usxe69F1Loh3l3-dYHp4g_dnXxwWY7";
 const SITE_URL = "https://tripcopycat.com";
