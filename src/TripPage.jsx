@@ -160,7 +160,7 @@ export default function TripPage() {
     setOg("og:description", desc);
     setOg("og:url", window.location.href);
     setOg("og:type", "article");
-    if (trip.image) setOg("og:image", trip.image);
+    setOg("og:image", `https://tripcopycat.com/api/og?id=${trip.id}`);
 
     return () => { document.title = "TripCopycat"; };
   }, [trip]);
