@@ -2,8 +2,7 @@ import React from "react";
 import { ImageResponse } from "@vercel/og";
 
 const SUPABASE_URL = "https://wnjxtjeospeblvqdqsdj.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_8usxe69F1Loh3l3-dYHp4g_dnXxwWY7";
-const SITE_URL = "https://tripcopycat.com";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
 export default async function handler(req) {
 const { searchParams } = new URL(req.url, 'https://tripcopycat.com');
@@ -159,7 +158,7 @@ const { searchParams } = new URL(req.url, 'https://tripcopycat.com');
         : null
     ),
 
-    // Bottom branding strip — TripCopycat_OG.webp full-width banner
+    // Bottom branding strip — no external image fetch
     React.createElement(
       "div",
       {
@@ -172,19 +171,22 @@ const { searchParams } = new URL(req.url, 'https://tripcopycat.com');
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "rgba(0,0,0,0.75)",
-          overflow: "hidden",
+          backgroundColor: "#2C3E50",
         },
       },
-      React.createElement("img", {
-        src: `${SITE_URL}/TripCopycat_OG.webp`,
-        style: {
-          width: "1200px",
-          height: `${STRIP_H}px`,
-          objectFit: "cover",
-          objectPosition: "center",
+      React.createElement(
+        "div",
+        {
+          style: {
+            display: "flex",
+            fontSize: "32px",
+            fontWeight: 700,
+            color: "#C4A882",
+            letterSpacing: "0.03em",
+          },
         },
-      })
+        "TripCopycat"
+      )
     )
   );
 
