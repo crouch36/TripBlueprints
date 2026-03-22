@@ -38,7 +38,7 @@ const key = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVC
       if (trip) {
         title       = trip.title       ?? title;
         destination = trip.destination ?? destination;
-        image       = trip.image       || null;
+image = trip.image ? (trip.image.startsWith('http') ? trip.image : `${SITE_URL}${trip.image}`) : null;
         duration    = trip.duration    ?? duration;
         region      = trip.region      ?? region;
       }
