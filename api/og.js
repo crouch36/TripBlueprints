@@ -6,7 +6,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_8usxe69F1Loh3l3-dYHp4g_dnXxwWY7";
 const SITE_URL = "https://tripcopycat.com";
 
 export default async function handler(req) {
-  const { searchParams } = new URL(req.url);
+const { searchParams } = new URL(req.url, 'https://tripcopycat.com');
   const id = searchParams.get("id");
 
   if (!id) {
