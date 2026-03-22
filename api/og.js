@@ -43,15 +43,7 @@ const { searchParams } = new URL(req.url, 'https://tripcopycat.com');
   }
 
   // Load Inter Bold for crisp text rendering
-  let fontData;
-  try {
-    fontData = await fetch(
-      "https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuFuYAZ9hiJ-Ek-_EeA.woff"
-    ).then((r) => r.arrayBuffer());
-  } catch (_) {
-    // Fall back to no custom font
-  }
-
+  
   const meta = [region, duration].filter(Boolean).join(" · ");
   const titleFontSize = title.length > 55 ? 46 : title.length > 35 ? 54 : 62;
   const STRIP_H = 110;
@@ -196,14 +188,8 @@ const { searchParams } = new URL(req.url, 'https://tripcopycat.com');
     )
   );
 
-  return new ImageResponse(element, {
+return new ImageResponse(element, {
     width: 1200,
     height: 630,
-    ...(fontData && {
-      fonts: [
-        { name: "Inter", data: fontData, style: "normal", weight: 400 },
-        { name: "Inter", data: fontData, style: "normal", weight: 700 },
-      ],
-    }),
   });
 }
