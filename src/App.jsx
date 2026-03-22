@@ -4,7 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 // ── Supabase client ───────────────────────────────────────────────────────────
 const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
+  import.meta.env.VITE_SUPABASE_ANON_KEY,
+  { auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true } }
 );
 
 // ── Content Filter ────────────────────────────────────────────────────────────
@@ -1366,12 +1367,33 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
   const photoRef = useRef(null);
   const autoSaveTimer = useRef(null);
 
-  // Check for existing draft on mount
+  // Check for existing draft on mount — also check localStorage fallback
   useEffect(() => {
-    if (!currentUser) { setCheckingDraft(false); return; }
+    if (!currentUser) {
+      // Check localStorage fallback even without login
+      const fallback = localStorage.getItem("tripcopycat_draft_fallback");
+      if (fallback) {
+        try {
+          const parsed = JSON.parse(fallback);
+          if (parsed.destination || parsed.title) setDraftExists(true);
+        } catch(e) {}
+      }
+      setCheckingDraft(false);
+      return;
+    }
     supabase.from("drafts").select("form_data, updated_at").eq("user_id", currentUser.id).single()
       .then(({ data }) => {
         if (data?.form_data) setDraftExists(true);
+        else {
+          // Check localStorage fallback if no Supabase draft
+          const fallback = localStorage.getItem("tripcopycat_draft_fallback");
+          if (fallback) {
+            try {
+              const parsed = JSON.parse(fallback);
+              if (parsed.destination || parsed.title) setDraftExists(true);
+            } catch(e) {}
+          }
+        }
         setCheckingDraft(false);
       });
   }, []);
@@ -1379,27 +1401,64 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
   const saveDraft = async (formData) => {
     if (!currentUser) return;
     setDraftSaving(true);
-    await supabase.from("drafts").upsert({
-      user_id: currentUser.id,
-      form_data: formData,
-      updated_at: new Date().toISOString()
-    }, { onConflict: "user_id" });
-    setDraftSaving(false);
-    setDraftSaved(true);
-    setTimeout(() => setDraftSaved(false), 2000);
+    try {
+      // Refresh session before saving to prevent auth expiry issues
+      await supabase.auth.getSession();
+      const { error } = await supabase.from("drafts").upsert({
+        user_id: currentUser.id,
+        form_data: formData,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "user_id" });
+      if (error) {
+        // Session expired — save to localStorage as fallback
+        if (error.code === "PGRST301" || error.message?.includes("JWT")) {
+          localStorage.setItem("tripcopycat_draft_fallback", JSON.stringify(formData));
+          setDraftSaved(true);
+          setTimeout(() => setDraftSaved(false), 2000);
+        } else {
+          console.error("Draft save error:", error);
+        }
+      } else {
+        // Also clear any localStorage fallback
+        localStorage.removeItem("tripcopycat_draft_fallback");
+        setDraftSaved(true);
+        setTimeout(() => setDraftSaved(false), 2000);
+      }
+    } catch(e) {
+      // Network error — save to localStorage as fallback
+      localStorage.setItem("tripcopycat_draft_fallback", JSON.stringify(formData));
+      setDraftSaved(true);
+      setTimeout(() => setDraftSaved(false), 2000);
+      console.warn("Draft saved to local fallback:", e.message);
+    } finally {
+      setDraftSaving(false);
+    }
   };
 
   const loadDraft = async () => {
-    const { data } = await supabase.from("drafts").select("form_data").eq("user_id", currentUser.id).single();
-    if (data?.form_data) {
-      setForm(data.form_data);
-      setDraftExists(false);
-      setStep("form");
+    if (currentUser) {
+      const { data } = await supabase.from("drafts").select("form_data").eq("user_id", currentUser.id).single();
+      if (data?.form_data) {
+        setForm(data.form_data);
+        setDraftExists(false);
+        setStep("form");
+        return;
+      }
+    }
+    // Fallback to localStorage
+    const fallback = localStorage.getItem("tripcopycat_draft_fallback");
+    if (fallback) {
+      try {
+        setForm(JSON.parse(fallback));
+        setDraftExists(false);
+        setStep("form");
+      } catch(e) {}
     }
   };
 
   const clearDraft = async () => {
     await supabase.from("drafts").delete().eq("user_id", currentUser.id);
+    localStorage.removeItem("tripcopycat_draft_fallback");
     setDraftExists(false);
   };
 
