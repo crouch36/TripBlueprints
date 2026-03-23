@@ -2091,7 +2091,7 @@ function AdminQueueModal({ onClose, onApprove }) {
       tags:t.tags||[], loves:t.loves, do_next:t.do_next||t.doNext||"",
       airfare:t.airfare||[], hotels:t.hotels||[], restaurants:t.restaurants||[],
       bars:t.bars||[], activities:t.activities||[], days:t.days||[],
-      image:t.image||"", status:"published", user_id:sub.user_id||null, focal_point:t.focalPoint||{x:50,y:50}, gallery:t.gallery||[]
+      image:t.image??null, status:"published", user_id:sub.user_id||null, focal_point:t.focalPoint||{x:50,y:50}, gallery:t.gallery||[]
     }]);
     await supabase.from("submissions").update({ status:"approved", reviewed_at:new Date().toISOString() }).eq("id",sub.id);
     setSubmissions(p => p.map(s => s.id===sub.id ? {...s,status:"approved"} : s));
@@ -3184,7 +3184,7 @@ export default function App() {
             tags:t.tags||[], loves:t.loves, doNext:t.do_next,
             airfare:t.airfare||[], hotels:t.hotels||[], restaurants:t.restaurants||[],
             bars:t.bars||[], activities:t.activities||[], days:t.days||[],
-            image:t.image||"", userId:t.user_id||null, featured:t.featured||false, focalPoint:t.focal_point||{x:50,y:50}, gallery:t.gallery||[]
+            image:t.image??null, userId:t.user_id||null, featured:t.featured||false, focalPoint:t.focal_point||{x:50,y:50}, gallery:t.gallery||[]
           }));
           setDbTrips(mapped);
         }
