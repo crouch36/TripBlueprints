@@ -2811,6 +2811,9 @@ function AdminEditModal({ trip, onSave, onClose }) {
   const [form, setForm] = useState(JSON.parse(JSON.stringify(trip)));
   const focalDragging = useRef(false);
   const focalPreviewRef = useRef();
+  const editGalleryRef = useRef();
+  const [editGalleryUploading, setEditGalleryUploading] = useState(false);
+  const [editGalleryError, setEditGalleryError] = useState("");
 
   const updField = (f, v) => setForm(p => ({ ...p, [f]: v }));
   const updRow   = (cat, i, f, v) => setForm(p => { const u = [...p[cat]]; u[i] = { ...u[i], [f]: v }; return { ...p, [cat]: u }; });
@@ -2820,6 +2823,47 @@ function AdminEditModal({ trip, onSave, onClose }) {
   const updDayItem = (di, ii, f, v) => setForm(p => { const d=[...p.days]; const its=[...d[di].items]; its[ii]={...its[ii],[f]:v}; d[di]={...d[di],items:its}; return {...p,days:d}; });
   const addDayItem = di => setForm(p => { const d=[...p.days]; d[di]={...d[di],items:[...d[di].items,{time:"",type:"activity",label:"",note:""}]}; return {...p,days:d}; });
   const delDayItem = (di, ii) => setForm(p => { const d=[...p.days]; d[di]={...d[di],items:d[di].items.filter((_,idx)=>idx!==ii)}; return {...p,days:d}; });
+
+  const handleEditGalleryAdd = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const allowed = ["image/jpeg","image/png","image/webp","image/heic","image/heif"];
+    const valid = files.filter(f => allowed.includes(f.type) && f.size <= 5*1024*1024);
+    if (valid.length < files.length) setEditGalleryError("Some files skipped (unsupported type or over 5MB).");
+    else setEditGalleryError("");
+    const remaining = 5 - (form.gallery||[]).length;
+    const toAdd = valid.slice(0, remaining);
+    if (!toAdd.length) return;
+    setEditGalleryUploading(true);
+    const uploaded = [];
+    for (const gf of toAdd) {
+      const canvas = document.createElement("canvas");
+      const img = new Image();
+      const url = URL.createObjectURL(gf);
+      await new Promise(res => {
+        img.onload = () => {
+          const s = Math.min(1, 1200 / Math.max(img.width, img.height));
+          canvas.width = Math.round(img.width * s);
+          canvas.height = Math.round(img.height * s);
+          canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(async (blob) => {
+            URL.revokeObjectURL(url);
+            const path = `gallery-${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+            const { error } = await supabase.storage.from("trip-photos").upload(path, blob, { contentType:"image/jpeg", upsert:false });
+            if (!error) {
+              const { data } = supabase.storage.from("trip-photos").getPublicUrl(path);
+              uploaded.push({ url: data.publicUrl, caption:"" });
+            }
+            res();
+          }, "image/jpeg", 0.78);
+        };
+        img.src = url;
+      });
+    }
+    setForm(p => ({ ...p, gallery: [...(p.gallery||[]), ...uploaded] }));
+    setEditGalleryUploading(false);
+    e.target.value = "";
+  };
 
   const inp  = { width:"100%", padding:"7px 10px", borderRadius:"7px", border:`1px solid ${C.tide}`, fontSize:"12px", outline:"none", boxSizing:"border-box", fontFamily:"inherit", background:C.white, color:C.slate };
   const lbl  = { fontSize:"11px", fontWeight:600, color:C.slateMid, marginBottom:"3px", display:"block" };
@@ -2961,6 +3005,41 @@ function AdminEditModal({ trip, onSave, onClose }) {
               <button onClick={()=>addRow(key)} style={{ fontSize:"11px", color:cfg.color, background:"none", border:`1px dashed ${cfg.color}`, padding:"3px 10px", borderRadius:"5px", cursor:"pointer", fontWeight:600 }}>+ Add row</button>
             </div>
           ))}
+
+          {/* gallery */}
+          <div style={sect}>🖼️ Photo Gallery</div>
+          <div style={{ marginBottom:"16px" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"10px", flexWrap:"wrap", gap:"8px" }}>
+              <div style={{ fontSize:"11px", color:C.muted }}>{(form.gallery||[]).length} photo{(form.gallery||[]).length!==1?"s":""} · max 5</div>
+              <label style={{ padding:"7px 14px", borderRadius:"7px", border:`1px solid ${C.azure}`, background:"rgba(91,143,185,0.08)", color:C.azureDeep, fontSize:"11px", fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:"6px", opacity: editGalleryUploading ? 0.6 : 1 }}>
+                {editGalleryUploading ? "⏳ Uploading…" : "📤 Add Photos"}
+                <input ref={editGalleryRef} type="file" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif" style={{ display:"none" }} onChange={handleEditGalleryAdd} disabled={editGalleryUploading} />
+              </label>
+            </div>
+            {editGalleryError && <div style={{ fontSize:"11px", color:C.red, marginBottom:"8px" }}>{editGalleryError}</div>}
+            {(form.gallery||[]).length > 0 ? (
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(100px, 1fr))", gap:"8px" }}>
+                {(form.gallery||[]).map((g, idx) => (
+                  <div key={idx} style={{ position:"relative", borderRadius:"8px", overflow:"hidden", border:`1px solid ${C.tide}`, aspectRatio:"1" }}>
+                    <img src={g.url} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                    <button
+                      onClick={() => setForm(p => ({ ...p, gallery: p.gallery.filter((_,i)=>i!==idx) }))}
+                      style={{ position:"absolute", top:"4px", right:"4px", background:"rgba(0,0,0,0.55)", border:"none", color:"#fff", borderRadius:"50%", width:"22px", height:"22px", fontSize:"13px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>×</button>
+                    <input
+                      value={g.caption||""}
+                      onChange={e => setForm(p => { const g2=[...p.gallery]; g2[idx]={...g2[idx],caption:e.target.value}; return {...p,gallery:g2}; })}
+                      placeholder="Caption…"
+                      style={{ position:"absolute", bottom:0, left:0, right:0, background:"rgba(0,0,0,0.55)", border:"none", color:"#fff", fontSize:"9px", padding:"3px 6px", fontFamily:"inherit", outline:"none" }} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign:"center", padding:"24px 16px", background:C.seafoam, borderRadius:"10px", border:`1px dashed ${C.tide}` }}>
+                <div style={{ fontSize:"24px", marginBottom:"6px" }}>📷</div>
+                <div style={{ fontSize:"12px", color:C.muted }}>No gallery photos yet — tap Add Photos to upload</div>
+              </div>
+            )}
+          </div>
 
           {/* daily itinerary */}
           <div style={sect}>📅 Daily Itinerary</div>
