@@ -6,12 +6,6 @@
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://tripcopycat.com/trips/797fcf29-1f16-410f-bdc8-32446d816209</loc>
-    <lastmod>2026-03-19</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://tripcopycat.com/trips/d329d3a2-16d2-49a6-8436-5ecb614c4d68</loc>
     <lastmod>2026-03-19</lastmod>
     <changefreq>monthly</changefreq>
@@ -20,6 +14,24 @@
   <url>
     <loc>https://tripcopycat.com/trips/27d47c1b-1b1b-4342-a755-d0b21acb6e2b</loc>
     <lastmod>2026-03-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://tripcopycat.com/trips/bb3d11b4-fa85-4794-b5c5-7c87accf3654</loc>
+    <lastmod>2026-03-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://tripcopycat.com/trips/797fcf29-1f16-410f-bdc8-32446d816209</loc>
+    <lastmod>2026-03-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://tripcopycat.com/trips/5b2ff203-2e9a-4b8a-aeee-a9a783202456</loc>
+    <lastmod>2026-03-22</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>

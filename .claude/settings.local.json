@@ -5,7 +5,8 @@
       "Bash(node -e \":*)",
       "Bash(npm run:*)",
       "WebFetch(domain:tripcopycat.com)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(npm install:*)"
     ]
   }
 }
