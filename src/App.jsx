@@ -3204,6 +3204,16 @@ export default function App() {
   // Admin state
   const isAdminUrl = window.location.pathname === "/admin" || window.location.hash === "#admin";
   const [showAdminLogin, setShowAdminLogin] = useState(isAdminUrl);
+
+  // Trigger admin login if navigated to #admin after mount
+  useEffect(() => {
+    const checkAdmin = () => {
+      if (window.location.hash === "#admin" && !isAdmin) setShowAdminLogin(true);
+    };
+    checkAdmin();
+    window.addEventListener("hashchange", checkAdmin);
+    return () => window.removeEventListener("hashchange", checkAdmin);
+  }, [isAdmin]);
   const [isAdmin, setIsAdmin] = useState(false);
   const handleAdminLogin = () => { setIsAdmin(true); setShowAdminLogin(false); };
   const [showLegal, setShowLegal] = useState(false);
@@ -3446,7 +3456,7 @@ export default function App() {
                       {isAdmin && (
                         <div style={{ position:"absolute", top:"12px", right:"12px", display:"flex", gap:"6px", zIndex:10 }}>
                           <button onClick={e => { e.stopPropagation(); setEditingTrip(trip); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:C.azure, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>✏️</button>
-                          <button onClick={async e => { e.stopPropagation(); await supabase.from("trips").update({ featured: !trip.featured }).eq("id", trip.id); fetchTrips(); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:trip.featured?"#C4A882":C.seafoamDeep, color:trip.featured?C.white:C.amber, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>✦</button>
+                          <button onClick={async e => { e.stopPropagation(); await supabase.from("trips").update({ featured: !trip.featured }).eq("id", trip.id); fetchTrips(); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:trip.featured?"#C4A882":"transparent", color:trip.featured?"#fff":"rgba(196,168,130,0.4)", fontSize:"13px", fontWeight:700, cursor:"pointer", border:trip.featured?"none":"1px dashed rgba(196,168,130,0.35)" }}>✦</button>
                           <button onClick={e => { e.stopPropagation(); setConfirmDelete(trip); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:C.red, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>🗑️</button>
                         </div>
                       )}
@@ -3492,7 +3502,7 @@ export default function App() {
                 {isAdmin && (
                   <div style={{ position:"absolute", top:"12px", right:"12px", display:"flex", gap:"6px", zIndex:10 }}>
                     <button onClick={e => { e.stopPropagation(); setEditingTrip(trip); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:C.azure, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>✏️</button>
-                    <button onClick={async e => { e.stopPropagation(); await supabase.from("trips").update({ featured: !trip.featured }).eq("id", trip.id); fetchTrips(); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:trip.featured?"#C4A882":C.seafoamDeep, color:trip.featured?C.white:C.amber, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>✦</button>
+                    <button onClick={async e => { e.stopPropagation(); await supabase.from("trips").update({ featured: !trip.featured }).eq("id", trip.id); fetchTrips(); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:trip.featured?"#C4A882":"transparent", color:trip.featured?"#fff":"rgba(196,168,130,0.4)", fontSize:"13px", fontWeight:700, cursor:"pointer", border:trip.featured?"none":"1px dashed rgba(196,168,130,0.35)" }}>✦</button>
                     <button onClick={e => { e.stopPropagation(); setConfirmDelete(trip); }} style={{ padding:"5px 10px", borderRadius:"7px", border:"none", background:C.red, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>🗑️</button>
                   </div>
                 )}
