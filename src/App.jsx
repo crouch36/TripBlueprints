@@ -832,12 +832,19 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
   const [showExport, setShowExport] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(null);
+  const [showRelated, setShowRelated] = useState(false);
 
   const gallery = trip.gallery || [];
 
-  const related = (allTrips || []).filter(t =>
-    t.id !== trip.id && (t.region === trip.region || t.author === trip.author)
-  ).slice(0, 3);
+  // Related trips algorithm: prioritise same author, then matching tags, then same region
+  const related = (allTrips || []).filter(t => t.id !== trip.id).map(t => {
+    let score = 0;
+    if (t.author === trip.author) score += 10;
+    const sharedTags = (t.tags || []).filter(tag => (trip.tags || []).includes(tag)).length;
+    score += sharedTags * 3;
+    if (t.region === trip.region) score += 2;
+    return { ...t, _score: score };
+  }).filter(t => t._score > 0).sort((a, b) => b._score - a._score).slice(0, 6);
 
   const handleShare = () => {
     const url = `${window.location.origin}/trip/${trip.id}`;
@@ -1001,32 +1008,48 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
           )}
         </div>
       </div>
-      {/* Related trips */}
-      {related.length > 0 && (
-        <div style={{ padding:"20px 28px", borderTop:`1px solid ${C.tide}`, background:C.seafoam }}>
-          <div style={{ fontSize:"11px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"14px" }}>You Might Also Like</div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(200px,100%),1fr))", gap:"12px" }}>
-            {related.map(t => {
-              const grad = REGION_GRADIENTS[t.region] || "linear-gradient(135deg,#8B7355,#C4A882)";
-              return (
-                <div key={t.id} onClick={() => { onClose(); setTimeout(() => window.__openTrip && window.__openTrip(t), 100); }} style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, overflow:"hidden", cursor:"pointer", transition:"all .15s" }}
-                  onMouseEnter={e=>e.currentTarget.style.borderColor=C.amber}
-                  onMouseLeave={e=>e.currentTarget.style.borderColor=C.tide}>
-                  <div style={{ height:"70px", background:t.image?"transparent":grad, position:"relative", overflow:"hidden" }}>
-                    {t.image && <img src={t.image} alt={t.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} />}
-                    {t.image && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.2)" }} />}
-                  </div>
-                  <div style={{ padding:"9px 11px" }}>
-                    <div style={{ fontSize:"11px", fontWeight:700, color:C.slate, lineHeight:1.3, marginBottom:"3px" }}>{t.title}</div>
-                    <div style={{ fontSize:"10px", color:C.muted }}>{t.destination} · {t.duration}</div>
-                  </div>
-                </div>
-              );
-            })}
+
           </div>
+      {/* Related trips — collapsed by default */}
+      {related.length > 0 && (
+        <div style={{ borderTop:`1px solid ${C.tide}`, background:C.seafoam }}>
+          <button
+            onClick={() => setShowRelated(p => !p)}
+            style={{ width:"100%", padding:"14px 28px", display:"flex", alignItems:"center", justifyContent:"space-between", background:"none", border:"none", cursor:"pointer", fontFamily:"inherit" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+              <span style={{ fontSize:"11px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em" }}>You Might Also Like</span>
+              <span style={{ fontSize:"10px", background:C.tide, color:C.slateLight, borderRadius:"20px", padding:"2px 8px", fontWeight:600 }}>{related.length}</span>
+            </div>
+            <span style={{ fontSize:"18px", color:C.muted, lineHeight:1 }}>{showRelated ? "−" : "+"}</span>
+          </button>
+          {showRelated && (
+            <div style={{ padding:"0 28px 20px" }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(180px,100%),1fr))", gap:"10px" }}>
+                {related.map(t => {
+                  const grad = REGION_GRADIENTS[t.region] || "linear-gradient(135deg,#8B7355,#C4A882)";
+                  const isSameAuthor = t.author === trip.author;
+                  return (
+                    <div key={t.id} onClick={() => { setShowRelated(false); setTimeout(() => window.__openTrip && window.__openTrip(t), 100); }}
+                      style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, overflow:"hidden", cursor:"pointer", transition:"all .15s" }}
+                      onMouseEnter={e=>e.currentTarget.style.borderColor=C.amber}
+                      onMouseLeave={e=>e.currentTarget.style.borderColor=C.tide}>
+                      <div style={{ height:"65px", background:t.image?"transparent":grad, position:"relative", overflow:"hidden" }}>
+                        {t.image && <img src={t.image} alt={t.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} />}
+                        {t.image && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.2)" }} />}
+                        {isSameAuthor && <div style={{ position:"absolute", top:"5px", left:"6px", background:"rgba(196,168,130,0.9)", borderRadius:"20px", padding:"2px 7px", fontSize:"9px", color:"#fff", fontWeight:700 }}>Same author</div>}
+                      </div>
+                      <div style={{ padding:"8px 10px" }}>
+                        <div style={{ fontSize:"11px", fontWeight:700, color:C.slate, lineHeight:1.3, marginBottom:"2px" }}>{t.title}</div>
+                        <div style={{ fontSize:"10px", color:C.muted }}>{t.destination} · {t.duration}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
-          </div>
       {showExport && <ExportModal trip={trip} onClose={() => setShowExport(false)} />}
     </>
   );
