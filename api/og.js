@@ -216,19 +216,16 @@ image = trip.image ? (trip.image.startsWith('http') ? trip.image : `${SITE_URL}$
           )
         ),
 
-        // Right: tagline
-        React.createElement(
-          "div",
-          {
-            style: {
-              display: "flex",
-              fontSize: "17px",
-              color: "rgba(255,255,255,0.45)",
-              letterSpacing: "0.03em",
-            },
+        // Right: copycat logo
+        React.createElement("img", {
+          src: `${SITE_URL}/copycat.svg`,
+          style: {
+            height: "52px",
+            width: "52px",
+            objectFit: "contain",
+            opacity: 0.9,
           },
-          "Real itineraries from real travelers"
-        )
+        })
       )
     ),
     { width: 1200, height: 630 }
