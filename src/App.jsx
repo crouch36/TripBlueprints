@@ -1034,7 +1034,7 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
                 <button onClick={handleTwitterShare} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 13px", cursor:"pointer", fontSize:"12px", fontWeight:700 }}>𝕏</button>
                 <button onClick={() => onBookmark && onBookmark(trip.id)} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 13px", cursor:"pointer", fontSize:"12px", fontWeight:700 }} title={isBookmarked ? "Remove bookmark" : "Bookmark"}>{isBookmarked ? "🔖 Saved" : "🏷️ Save"}</button>
                 <button onClick={() => setShowExport(true)} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 13px", cursor:"pointer", fontSize:"12px", fontWeight:700 }}>📤 Export</button>
-                <button onClick={onClose} style={{ background:"rgba(196,168,130,0.2)", border:"none", color:"#FAF7F2", borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>×</button>
+                <button onClick={e => { e.stopPropagation(); onClose(); }} style={{ background:"rgba(196,168,130,0.2)", border:"none", color:"#FAF7F2", borderRadius:"50%", width:"40px", height:"40px", cursor:"pointer", fontSize:"20px", touchAction:"manipulation", flexShrink:0 }}>×</button>
               </div>
             </div>
             <div style={{ marginTop:"12px", display:"flex", gap:"10px", flexWrap:"wrap", alignItems:"center" }}>
@@ -2713,7 +2713,7 @@ function ProfilePage({ authorName, allTrips, onClose, onTripClick, currentUser, 
               </div>
             </div>
             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:"8px", flexShrink:0 }}>
-              <button onClick={onClose} style={{ background:"rgba(196,168,130,0.2)", border:"none", color:"#FAF7F2", borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>×</button>
+              <button onClick={e => { e.stopPropagation(); onClose(); }} style={{ background:"rgba(196,168,130,0.2)", border:"none", color:"#FAF7F2", borderRadius:"50%", width:"40px", height:"40px", cursor:"pointer", fontSize:"20px", touchAction:"manipulation", flexShrink:0 }}>×</button>
               {currentUser && isOwnProfile && (
                 <button onClick={() => { supabase.auth.signOut(); onClose(); }} style={{ background:"rgba(255,255,255,0.1)", border:"none", color:"rgba(250,247,242,0.7)", borderRadius:"6px", padding:"4px 10px", fontSize:"11px", cursor:"pointer" }}>Sign out</button>
               )}
