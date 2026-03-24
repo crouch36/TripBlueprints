@@ -887,7 +887,6 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
             </div>
           </div>
 
-          {/* scrollable body */}
           <div style={{ overflowY:"auto", WebkitOverflowScrolling:"touch", flex:1 }}>
           {/* tabs */}
           <div style={{ display:"flex", borderBottom:`1px solid ${C.tide}`, background:C.seafoam }}>
@@ -1030,9 +1029,9 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
               );
             })}
           </div>
-          </div>{/* end scrollable body */}
         </div>
       )}
+          </div>
       {showExport && <ExportModal trip={trip} onClose={() => setShowExport(false)} />}
     </>
   );
