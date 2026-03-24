@@ -3217,6 +3217,7 @@ export default function App() {
   // Admin state
   const isAdminUrl = window.location.pathname === "/admin" || window.location.hash === "#admin";
   const [showAdminLogin, setShowAdminLogin] = useState(isAdminUrl);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Trigger admin login if navigated to #admin after mount
   useEffect(() => {
@@ -3227,7 +3228,6 @@ export default function App() {
     window.addEventListener("hashchange", checkAdmin);
     return () => window.removeEventListener("hashchange", checkAdmin);
   }, [isAdmin]);
-  const [isAdmin, setIsAdmin] = useState(false);
   const handleAdminLogin = () => { setIsAdmin(true); setShowAdminLogin(false); };
   const [showLegal, setShowLegal] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
