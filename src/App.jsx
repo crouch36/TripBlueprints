@@ -4,7 +4,9 @@ import supabase from "./supabaseClient.js";
 // ── Content Filter ────────────────────────────────────────────────────────────
 const PROFANITY = ["spam","scam","xxx","porn","casino","viagra"];
 function runContentFilter(trip) {
-  const text = JSON.stringify(trip).toLowerCase();
+  // Exclude image/gallery fields from URL check — they legitimately contain multiple URLs
+  const { image, gallery, ...textFields } = trip;
+  const text = JSON.stringify(textFields).toLowerCase();
   const flags = [];
   PROFANITY.forEach(w => { if (text.includes(w)) flags.push('Contains flagged word: ' + w); });
   if ((text.match(/http/g)||[]).length > 2) flags.push("Multiple URLs detected");
