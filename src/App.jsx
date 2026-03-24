@@ -1029,12 +1029,16 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
                 <h2 style={{ margin:0, fontSize:"27px", fontWeight:700, fontFamily:"'Playfair Display',Georgia,serif", color:"#FFFFFF", textShadow:"0 2px 8px rgba(0,0,0,0.5)" }}>{trip.title}</h2>
                 <div style={{ marginTop:"4px", fontSize:"14px", color:"rgba(255,255,255,0.95)", fontWeight:500, textShadow:"0 1px 4px rgba(0,0,0,0.5)" }}>{trip.destination}</div>
               </div>
-              <div style={{ display:"flex", gap:"7px", alignItems:"flex-start" }}>
-                <button onClick={handleShare} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 13px", cursor:"pointer", fontSize:"12px", fontWeight:700 }}>{shareCopied ? "✓ Copied!" : "🔗 Share"}</button>
-                <button onClick={handleTwitterShare} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 13px", cursor:"pointer", fontSize:"12px", fontWeight:700 }}>𝕏</button>
-                <button onClick={() => onBookmark && onBookmark(trip.id)} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 13px", cursor:"pointer", fontSize:"12px", fontWeight:700 }} title={isBookmarked ? "Remove bookmark" : "Bookmark"}>{isBookmarked ? "🔖 Saved" : "🏷️ Save"}</button>
-                <button onClick={() => setShowExport(true)} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 13px", cursor:"pointer", fontSize:"12px", fontWeight:700 }}>📤 Export</button>
-                <button onClick={e => { e.stopPropagation(); onClose(); }} style={{ background:"rgba(196,168,130,0.2)", border:"none", color:"#FAF7F2", borderRadius:"50%", width:"40px", height:"40px", cursor:"pointer", fontSize:"20px", touchAction:"manipulation", flexShrink:0 }}>×</button>
+              <div style={{ display:"flex", flexDirection:"column", gap:"6px", alignItems:"flex-end" }}>
+                {/* Close button — always on top, full size */}
+                <button onClick={e => { e.stopPropagation(); onClose(); }} style={{ background:"rgba(0,0,0,0.35)", border:"2px solid rgba(255,255,255,0.4)", color:"#fff", borderRadius:"50%", width:"44px", height:"44px", cursor:"pointer", fontSize:"22px", touchAction:"manipulation", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>×</button>
+                {/* Action buttons row */}
+                <div style={{ display:"flex", gap:"6px", flexWrap:"wrap", justifyContent:"flex-end" }}>
+                  <button onClick={handleShare} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 11px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation" }}>{shareCopied ? "✓ Copied!" : "🔗 Share"}</button>
+                  <button onClick={handleTwitterShare} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 11px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation" }}>𝕏</button>
+                  <button onClick={() => onBookmark && onBookmark(trip.id)} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 11px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation" }} title={isBookmarked ? "Remove bookmark" : "Bookmark"}>{isBookmarked ? "🔖 Saved" : "🏷️ Save"}</button>
+                  <button onClick={() => setShowExport(true)} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"6px 11px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation" }}>📤 Export</button>
+                </div>
               </div>
             </div>
             <div style={{ marginTop:"12px", display:"flex", gap:"10px", flexWrap:"wrap", alignItems:"center" }}>
