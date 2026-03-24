@@ -859,12 +859,12 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
 
   return (
     <>
-      <div style={{ position:"fixed", inset:0, background:"rgba(44,62,80,0.6)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:"16px", overflow:"hidden", backdropFilter:"blur(6px)" }}
+      <div style={{ position:"fixed", inset:0, background:"rgba(44,62,80,0.6)", zIndex:1000, display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"20px 16px", overflowY:"auto", WebkitOverflowScrolling:"touch", backdropFilter:"blur(6px)" }}
         onClick={e => e.target === e.currentTarget && onClose()}>
-        <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"880px", boxShadow:`0 32px 64px rgba(44,62,80,0.2)`, border:`1px solid ${C.tide}`, display:"flex", flexDirection:"column", maxHeight:"92vh", overflow:"hidden" }}>
+        <div style={{ background:C.white, borderRadius:"20px", width:"100%", maxWidth:"880px", boxShadow:`0 32px 64px rgba(44,62,80,0.2)`, border:`1px solid ${C.tide}`, overflow:"hidden", marginTop:"8px", marginBottom:"20px" }}>
 
           {/* header */}
-          <div style={{ position:"relative", background:`linear-gradient(135deg,#2C1810 0%,#3D2B1F 100%)`, padding:"20px 20px 20px 30px", color:C.white, overflow:"visible", flexShrink:0 }}>
+          <div style={{ position:"relative", background:`linear-gradient(135deg,#2C1810 0%,#3D2B1F 100%)`, padding:"20px 20px 20px 30px", color:C.white, overflow:"hidden" }}>
             {trip.image && <img src={trip.image} alt={trip.title} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", objectPosition:`${trip.focalPoint?.x||50}% ${trip.focalPoint?.y||50}%`, opacity:0.35 }} />}
             <div style={{ position:"relative", zIndex:1, display:"flex", justifyContent:"space-between" }}>
               <div>
@@ -889,7 +889,6 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
             </div>
           </div>
 
-          <div style={{ overflowY:"auto", WebkitOverflowScrolling:"touch", flex:1 }}>
           {/* tabs */}
           <div style={{ display:"flex", borderBottom:`1px solid ${C.tide}`, background:C.seafoam }}>
             {[{id:"overview",l:"Overview"},{id:"daily",l:"📅 Daily Itinerary"},{id:"details",l:"🗂️ All Details"}].map(t => (
@@ -1009,7 +1008,6 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
         </div>
       </div>
 
-          </div>
       {/* Related trips — collapsed by default */}
       {related.length > 0 && (
         <div style={{ borderTop:`1px solid ${C.tide}`, background:C.seafoam }}>
