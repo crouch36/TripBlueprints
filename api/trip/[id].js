@@ -1,20 +1,23 @@
 const SUPABASE_URL = "https://wnjxtjeospeblvqdqsdj.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Induanh0amVvc3BlYmx2cWRxc2RqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MTI2MjQsImV4cCI6MjA4OTI4ODYyNH0.l3OHQ9_v5__lkX_AryEkmg2uYGgxnTR4KqViV8foNls";
+const SITE_URL = "https://www.tripcopycat.com";
 
-// Hardcoded local trips (not in Supabase)
+const DEFAULT_TITLE = "TripCopycat — Real Itineraries from Real Travelers";
+const DEFAULT_DESC  = "Copy real trips planned by real travelers. Browse free travel itineraries and submit your own.";
+const DEFAULT_IMAGE = `${SITE_URL}/TripCopycat_OG.png`;
+
 const LOCAL_TRIPS = {
   "1": {
     title: "Scotland with Kids — Edinburgh & Perthshire — TripCopycat",
     description: "The Perthshire farm stay at Pitmeadow Farm is the undisputed highlight — collecting eggs, walking ponies, feeding pigs. Our kids call this their favourite trip ever.",
-    image: "/victoria-street.jpg",
+    image: `${SITE_URL}/victoria-street.jpg`,
   },
   "2": {
     title: "Ireland Guys Trip — Galway & Dublin — TripCopycat",
     description: "Sean's Bar is a mandatory stop — opens at 10:30am and there is no better way to start an Ireland trip. Bowe's consistently pours the best pint in Dublin.",
-    image: "/bowes.webp",
+    image: `${SITE_URL}/bowes.webp`,
   },
 };
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Induanh0amVvc3BlYmx2cWRxc2RqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MTI2MjQsImV4cCI6MjA4OTI4ODYyNH0.l3OHQ9_v5__lkX_AryEkmg2uYGgxnTR4KqViV8foNls";
-const SITE_URL = "https://www.tripcopycat.com";
 
 function escapeHtml(str) {
   return String(str || "")
@@ -24,87 +27,68 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;");
 }
 
+function proxyImage(imageUrl) {
+  if (!imageUrl) return DEFAULT_IMAGE;
+  if (imageUrl.startsWith(SITE_URL)) return imageUrl;
+  if (imageUrl.startsWith("http")) return `${SITE_URL}/api/image?url=${encodeURIComponent(imageUrl)}`;
+  return `${SITE_URL}${imageUrl}`;
+}
+
 export default async function handler(req, res) {
   const { id } = req.query;
+  if (!id) { res.status(400).send("Missing id"); return; }
 
-  let title = "TripCopycat — Real Itineraries from Real Travelers";
-  let description = "Copy real trips planned by real travelers. Browse free travel itineraries and submit your own.";
-  let ogImage = `${SITE_URL}/api/og?id=${id}`;
+  let title = DEFAULT_TITLE;
+  let description = DEFAULT_DESC;
+  let ogImage = DEFAULT_IMAGE;
   const canonicalUrl = `${SITE_URL}/trip/${id}`;
 
-  // Check local trips first
+  // 1. Check local hardcoded trips first
   const local = LOCAL_TRIPS[String(id)];
   if (local) {
     title = local.title;
     description = local.description;
-    ogImage = local.image.startsWith("http")
-      ? `${SITE_URL}/api/image?url=${encodeURIComponent(local.image)}`
-      : `${SITE_URL}${local.image}`;
+    ogImage = proxyImage(local.image);
   }
 
+  // 2. Try Supabase
   try {
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/trips?id=eq.${id}&status=eq.published&select=title,destination,image,duration,region,loves&limit=1`,
-      {
-        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-        signal: AbortSignal.timeout(4000),
-      }
+      `${SUPABASE_URL}/rest/v1/trips?id=eq.${encodeURIComponent(id)}&status=eq.published&select=title,destination,image,duration,region,loves&limit=1`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(4000) }
     );
     if (r.ok) {
       const rows = await r.json();
       const trip = rows?.[0];
       if (trip) {
         title = `${trip.title} — TripCopycat`;
-        description = trip.loves
-          ? trip.loves.slice(0, 160)
-          : `${trip.destination} · ${trip.duration} · Real traveler itinerary on TripCopycat`;
-        // Proxy Supabase URLs through our domain so iMessage/social platforms accept them
-        if (trip.image) {
-          if (trip.image.startsWith("http")) {
-            ogImage = `${SITE_URL}/api/image?url=${encodeURIComponent(trip.image)}`;
-          } else {
-            ogImage = `${SITE_URL}${trip.image}`;
-          }
-        }
+        description = trip.loves ? trip.loves.slice(0, 160) : `${trip.destination} · ${trip.duration} · Real traveler itinerary on TripCopycat`;
+        ogImage = proxyImage(trip.image);
       }
     }
-  } catch (_) {
-    // Fall through to defaults
-  }
+  } catch (_) {}
 
-  // Fetch the real built index.html and inject our meta tags into it
+  // 3. Fetch the real built index.html — it has correct Vite asset hashes
   let html = "";
   try {
-    const indexRes = await fetch(`${SITE_URL}/index.html`, { signal: AbortSignal.timeout(4000) });
-    html = await indexRes.text();
+    const r = await fetch(`${SITE_URL}/`, { signal: AbortSignal.timeout(4000) });
+    html = await r.text();
   } catch (_) {
-    res.status(500).send("Could not load index.html");
-    return;
+    res.status(500).send("Failed to load app"); return;
   }
 
-  const ogTags = `
-    <meta property="og:title" content="${escapeHtml(title)}" />
-    <meta property="og:description" content="${escapeHtml(description)}" />
-    <meta property="og:url" content="${canonicalUrl}" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="${escapeHtml(ogImage)}" />
-    <meta property="og:image:secure_url" content="${escapeHtml(ogImage)}" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="${escapeHtml(ogImage)}" />`;
-
-  // Replace existing OG tags and inject trip-specific ones
+  // 4. Replace placeholder tokens (set in index.html)
   html = html
-    .replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(title)}</title>`)
-    .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${escapeHtml(description)}" />`)
-    .replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${escapeHtml(title)}" />`)
-    .replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${escapeHtml(description)}" />`)
-    .replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${canonicalUrl}" />`)
-    .replace(/<meta property="og:image"[^>]*>/, `<meta property="og:image" content="${escapeHtml(ogImage)}" />`)
-    .replace(/<meta property="og:image:secure_url"[^>]*>/, `<meta property="og:image:secure_url" content="${escapeHtml(ogImage)}" />`);
+    .replace(/__OG_TITLE__/g,       escapeHtml(title))
+    .replace(/__OG_DESCRIPTION__/g, escapeHtml(description))
+    .replace(/__OG_URL__/g,         canonicalUrl)
+    .replace(/__OG_IMAGE__/g,       escapeHtml(ogImage));
+
+  // 5. Inject a small script so React knows which trip to open on mount
+  const tripScript = `<script>window.__INITIAL_TRIP_ID__ = ${JSON.stringify(String(id))};</script>`;
+  html = html.replace("</head>", `${tripScript}\n  </head>`);
 
   res.setHeader("Content-Type", "text/html; charset=utf-8");
-  res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate=86400");
+  res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=3600");
   res.status(200).send(html);
 }

@@ -3278,21 +3278,13 @@ export default function App() {
 
   const allTrips = [...dbTrips, ...trips];
 
-  // On first load, open trip modal if URL is /trip/:id
+  // On first load, open trip modal if server injected __INITIAL_TRIP_ID__
   useEffect(() => {
-    const m = window.location.pathname.match(/^\/trip\/(.+)/);
-    if (!m) return;
-    const id = m[1];
-    // Check immediately in case trips are already available
-    const immediate = allTrips.find(t => String(t.id) === id || slugify(t.title) === id);
-    if (immediate) { setSelected(immediate); return; }
-    // Otherwise wait for trips to load
-    const interval = setInterval(() => {
-      const found = [...dbTrips, ...trips].find(t => String(t.id) === id || slugify(t.title) === id);
-      if (found) { setSelected(found); clearInterval(interval); }
-    }, 100);
-    setTimeout(() => clearInterval(interval), 5000);
-  }, []);
+    const id = window.__INITIAL_TRIP_ID__;
+    if (!id) return;
+    const found = allTrips.find(t => String(t.id) === id || slugify(t.title) === id);
+    if (found) setSelected(found);
+  }, [allTrips]);
 
   // URL path routing for individual trips (/trip/:id)
   useEffect(() => {
