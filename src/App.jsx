@@ -3626,11 +3626,12 @@ export default function App() {
       {showLegal     && <LegalModal onClose={() => setShowLegal(false)} />}
       {showFeedback  && <FeedbackModal onClose={() => setShowFeedback(false)} />}
 
-      {/* Floating feedback button */}
-      <button onClick={() => setShowFeedback(true)} style={{ position:"fixed", bottom:"24px", right:"24px", zIndex:500, background:`linear-gradient(135deg, #1C2B3A, #C1692A)`, color:C.white, border:"none", borderRadius:"50px", padding:"11px 20px", fontSize:"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 4px 18px rgba(28,43,58,0.35)`, display:"flex", alignItems:"center", gap:"7px", transition:"transform .15s" }}
+      {/* Floating feedback button — bottom-left on mobile to avoid covering trip cards */}
+      <button onClick={() => setShowFeedback(true)}
+        style={{ position:"fixed", bottom:"20px", left:isMobile()?"16px":"auto", right:isMobile()?"auto":"24px", zIndex:500, background:`linear-gradient(135deg, #1C2B3A, #C1692A)`, color:C.white, border:"none", borderRadius:"50px", padding:isMobile()?"9px 14px":"11px 20px", fontSize:isMobile()?"11px":"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 4px 18px rgba(28,43,58,0.35)`, display:"flex", alignItems:"center", gap:"6px", transition:"transform .15s" }}
         onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
         onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
-        💬 Feedback
+        {isMobile() ? "💬" : "💬 Feedback"}
       </button>
 
       {/* Site footer */}
