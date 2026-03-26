@@ -1,6 +1,83 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import supabase from "./supabaseClient.js";
 
+// ── Global interaction styles injected once ───────────────────────────────────
+const GLOBAL_STYLES = `
+  /* Remove iOS tap flash on all interactive elements */
+  button, [role="button"], a, input, textarea, select {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Button press state — gives physical "click" feel on mobile */
+  button:active {
+    transform: scale(0.97) !important;
+    opacity: 0.85 !important;
+  }
+
+  /* Trip card hover */
+  .tc-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 32px rgba(28,43,58,0.15) !important;
+    border-color: #C4A882 !important;
+  }
+  .tc-card:active {
+    transform: translateY(-1px) scale(0.99);
+  }
+
+  /* Standard button hover */
+  .tc-btn:hover {
+    filter: brightness(1.06);
+  }
+
+  /* Ghost/outline button hover */
+  .tc-btn-ghost:hover {
+    background-color: rgba(196,168,130,0.12) !important;
+    border-color: #C4A882 !important;
+  }
+
+  /* Tag pill hover */
+  .tc-tag:hover {
+    background-color: #1C2B3A !important;
+    color: #fff !important;
+    border-color: #1C2B3A !important;
+  }
+
+  /* Focus ring for accessibility */
+  button:focus-visible {
+    outline: 2px solid #C4A882;
+    outline-offset: 2px;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: #C4A882 !important;
+    box-shadow: 0 0 0 3px rgba(196,168,130,0.15) !important;
+  }
+
+  /* Smooth scrollbar */
+  * { scrollbar-width: thin; scrollbar-color: #E8DDD0 transparent; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #E8DDD0; border-radius: 99px; }
+
+  /* Border highlight on hover — replaces JS onMouseEnter handlers */
+  .tc-hover-border:hover { border-color: #C4A882 !important; }
+
+  /* Lift card hover — for profile cards and related trip cards */
+  .tc-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(28,43,58,0.12) !important;
+    border-color: #C4A882 !important;
+  }
+  .tc-lift:active { transform: translateY(0) scale(0.99); }
+
+  /* Sidebar/filter hover */
+  .tc-sidebar-btn:hover { background-color: rgba(196,168,130,0.1) !important; }
+`;
+
+function GlobalStyles() {
+  return <style dangerouslySetInnerHTML={{ __html: GLOBAL_STYLES }} />;
+}
+
+
 // ── Content Filter ────────────────────────────────────────────────────────────
 const PROFANITY = ["spam","scam","xxx","porn","casino","viagra"];
 function runContentFilter(trip) {
@@ -448,8 +525,7 @@ function PhotoImportModal({ onClose, onComplete, skipCloseOnComplete }) {
               onDragOver={e => e.preventDefault()}
               onClick={() => fileRef.current.click()}
               style={{ border:`2px dashed ${C.tide}`, borderRadius:"16px", padding:"48px 32px", cursor:"pointer", background:C.seafoam, transition:"border-color .2s" }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = C.amber}
-              onMouseLeave={e => e.currentTarget.style.borderColor = C.tide}>
+              className="tc-hover-border">
               <div style={{ fontSize:"44px", marginBottom:"14px" }}>📁</div>
               <div style={{ fontSize:"17px", fontWeight:700, color:C.slate, marginBottom:"6px" }}>Drop your trip photos here</div>
               <div style={{ fontSize:"12px", color:C.slateLight, marginBottom:"20px" }}>Or click to browse · Up to 30 photos · JPEG, PNG, HEIC</div>
@@ -478,7 +554,7 @@ function PhotoImportModal({ onClose, onComplete, skipCloseOnComplete }) {
             </div>
             <div style={{ marginTop:"24px", display:"flex", justifyContent:"center", gap:"7px", flexWrap:"wrap" }}>
               {[["📍 GPS", 0], ["🗜️ Compress", 30], ["🤖 AI Analysis", 70], ["✓ Done", 95]].map(([label, threshold]) => (
-                <span key={label} style={{ fontSize:"11px", padding:"4px 11px", borderRadius:"20px", background:progress >= threshold ? C.seafoamDeep : C.sand, color:progress >= threshold ? C.azureDeep : C.muted, transition:"all .4s" }}>{label}</span>
+                <span key={label} style={{ fontSize:"11px", padding:"4px 11px", borderRadius:"20px", background:progress >= threshold ? C.seafoamDeep : C.sand, color:progress >= threshold ? C.azureDeep : C.muted, transition:"background-color .4s ease, color .4s ease" }}>{label}</span>
               ))}
             </div>
             <button onClick={() => setPhase("drop")} style={{ marginTop:"24px", padding:"8px 20px", borderRadius:"7px", border:`1px solid ${C.tide}`, background:C.white, color:C.muted, fontSize:"12px", cursor:"pointer" }}>
@@ -637,7 +713,7 @@ function EmailImportModal({ onClose }) {
           <div>
             <div style={{ padding:"12px 28px", background:C.seafoam, borderBottom:`1px solid ${C.tide}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div style={{ fontSize:"12px", color:C.slateLight }}><strong style={{ color:C.slate }}>{items.length}</strong> confirmations detected · <strong style={{ color:C.green }}>{nAcc}</strong> accepted</div>
-              <button onClick={acceptAll} style={{ padding:"5px 14px", borderRadius:"7px", border:"none", background:C.green, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>Accept All</button>
+              <button className="tc-btn" onClick={acceptAll} style={{ padding:"5px 14px", borderRadius:"7px", border:"none", background:C.green, color:C.white, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>Accept All</button>
             </div>
             <div style={{ padding:"14px 22px", maxHeight:"400px", overflowY:"auto", WebkitOverflowScrolling:"touch", background:C.white }}>
               {items.map(item => (
@@ -693,9 +769,8 @@ function SmartImportHub({ onClose, onPhotoComplete }) {
             { id:"email", icon:"📧", title:"Email & Bookings Import", desc:"Parse flight, hotel, restaurant & activity confirmations automatically", badge:"Most Accurate", bc:C.green,
               bullets:["Connect Gmail (read-only) or forward emails","Reads: airline, hotel, reservation dates, cost","~95% accuracy on structured bookings","Works with 40+ booking platforms"] },
           ].map(opt => (
-            <button key={opt.id} onClick={() => setActive(opt.id)} style={{ textAlign:"left", padding:"18px 20px", borderRadius:"14px", border:`1px solid ${C.tide}`, background:C.seafoam, cursor:"pointer", transition:"all .15s" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor=C.azure; e.currentTarget.style.background=C.seafoamDeep; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor=C.tide; e.currentTarget.style.background=C.seafoam; }}>
+            <button key={opt.id} onClick={() => setActive(opt.id)} style={{ textAlign:"left", padding:"18px 20px", borderRadius:"14px", border:`1px solid ${C.tide}`, background:C.seafoam, cursor:"pointer", transition:"background-color .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease" }}
+              className="tc-hover-border">
               <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"9px" }}>
                 <span style={{ fontSize:"26px" }}>{opt.icon}</span>
                 <div style={{ flex:1 }}>
@@ -788,7 +863,7 @@ function DailyItinerary({ days }) {
     <div>
       <div style={{ display:"flex", gap:"7px", overflowX:"auto", paddingBottom:"10px", marginBottom:"22px" }}>
         {days.map((day, i) => (
-          <button key={i} onClick={() => setActive(i)} style={{ padding:"9px 15px", borderRadius:"10px", border:`1px solid ${active===i?C.slate:C.tide}`, cursor:"pointer", flexShrink:0, textAlign:"left", background:active===i?C.slate:C.white, color:active===i?C.white:C.slateLight, boxShadow:active===i?`0 4px 12px rgba(28,43,58,0.22)`:"none", transition:"all .15s" }}>
+          <button key={i} onClick={() => setActive(i)} style={{ padding:"9px 15px", borderRadius:"10px", border:`1px solid ${active===i?C.slate:C.tide}`, cursor:"pointer", flexShrink:0, textAlign:"left", background:active===i?C.slate:C.white, color:active===i?C.white:C.slateLight, boxShadow:active===i?`0 4px 12px rgba(28,43,58,0.22)`:"none", transition:"background-color .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease" }}>
             <div style={{ fontSize:"9px", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", opacity:.75 }}>Day {day.day}</div>
             <div style={{ fontSize:"12px", fontWeight:700, marginTop:"2px" }}>{day.date}</div>
             <div style={{ fontSize:"10px", marginTop:"2px", opacity:.85 }}>{day.title}</div>
@@ -889,7 +964,7 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
           {/* tabs */}
           <div style={{ display:"flex", borderBottom:`1px solid ${C.tide}`, background:C.seafoam }}>
             {[{id:"overview",l:"Overview"},{id:"daily",l:"📅 Daily Itinerary"},{id:"details",l:"🗂️ All Details"}].map(t => (
-              <button key={t.id} onClick={() => setView(t.id)} style={{ padding:"12px 20px", fontSize:"13px", fontWeight:700, border:"none", cursor:"pointer", background:"transparent", color:view===t.id?C.azureDeep:C.muted, borderBottom:view===t.id?`2px solid ${C.amber}`:"2px solid transparent", transition:"all .15s" }}>{t.l}</button>
+              <button key={t.id} onClick={() => setView(t.id)} style={{ padding:"12px 20px", fontSize:"13px", fontWeight:700, border:"none", cursor:"pointer", background:"transparent", color:view===t.id?C.azureDeep:C.muted, borderBottom:view===t.id?`2px solid ${C.amber}`:"2px solid transparent", transition:"background-color .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease" }}>{t.l}</button>
             ))}
           </div>
 
@@ -898,8 +973,7 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
             <div style={{ padding:"12px 20px", borderBottom:`1px solid ${C.tide}`, background:C.white, display:"flex", gap:"8px", overflowX:"auto" }}>
               {gallery.map((g, idx) => (
                 <div key={idx} onClick={() => setLightboxIdx(idx)} style={{ flexShrink:0, width:"80px", height:"60px", borderRadius:"6px", overflow:"hidden", cursor:"pointer", border:`1.5px solid ${C.tide}`, position:"relative" }}
-                  onMouseEnter={e => e.currentTarget.style.borderColor=C.amber}
-                  onMouseLeave={e => e.currentTarget.style.borderColor=C.tide}>
+                  className="tc-hover-border">
                   <img src={g.url} alt={g.caption||""} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
                 </div>
               ))}
@@ -941,7 +1015,7 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
                     const count = trip[key]?.length||0;
                     return (
                       <button key={key} onClick={() => { setView("details"); setTab(key); }} disabled={count===0}
-                        style={{ textAlign:"center", padding:"12px 6px", background:count>0?C.seafoam:"#f8f8f6", borderRadius:"10px", border:`1px solid ${count>0?C.tide:"#eee"}`, cursor:count>0?"pointer":"default", transition:"all .15s", opacity:count>0?1:0.5 }}
+                        style={{ textAlign:"center", padding:"12px 6px", background:count>0?C.seafoam:"#f8f8f6", borderRadius:"10px", border:`1px solid ${count>0?C.tide:"#eee"}`, cursor:count>0?"pointer":"default", transition:"background-color .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease", opacity:count>0?1:0.5 }}
                         onMouseEnter={e => { if(count>0) { e.currentTarget.style.background=C.amberBg; e.currentTarget.style.borderColor=C.amber; }}}
                         onMouseLeave={e => { e.currentTarget.style.background=count>0?C.seafoam:"#f8f8f6"; e.currentTarget.style.borderColor=count>0?C.tide:"#eee"; }}>
                         <div style={{ fontSize:"17px", marginBottom:"3px" }}>{cfg.label.split(" ")[0]}</div>
@@ -974,7 +1048,7 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
                 if (!trip[key]?.length) return null;
                 const isOpen = tab === key || tab === "all";
                 return (
-                  <div key={key} style={{ marginBottom:"8px", borderRadius:"10px", border:`1px solid ${isOpen ? cfg.color+"44" : C.tide}`, overflow:"hidden", transition:"all .2s" }}>
+                  <div key={key} style={{ marginBottom:"8px", borderRadius:"10px", border:`1px solid ${isOpen ? cfg.color+"44" : C.tide}`, overflow:"hidden", transition:"transform .18s ease, box-shadow .18s ease, border-color .18s ease" }}>
                     <button onClick={() => setTab(isOpen && tab !== "all" ? "all" : key)}
                       style={{ width:"100%", padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", background:isOpen ? cfg.color+"11" : C.white, border:"none", cursor:"pointer", textAlign:"left" }}>
                       <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
@@ -1025,9 +1099,8 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
                   const isSameAuthor = t.author === trip.author;
                   return (
                     <div key={t.id} onClick={() => { setShowRelated(false); setTimeout(() => window.__openTrip && window.__openTrip(t), 100); }}
-                      style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, overflow:"hidden", cursor:"pointer", transition:"all .15s" }}
-                      onMouseEnter={e=>e.currentTarget.style.borderColor=C.amber}
-                      onMouseLeave={e=>e.currentTarget.style.borderColor=C.tide}>
+                      style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, overflow:"hidden", cursor:"pointer", transition:"background-color .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease" }}
+                      className="tc-hover-border">
                       <div style={{ height:"65px", background:t.image?"transparent":grad, position:"relative", overflow:"hidden" }}>
                         {t.image && <img src={t.image} alt={t.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} />}
                         {t.image && <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.2)" }} />}
@@ -1065,9 +1138,7 @@ function TripCard({ trip, onClick, isBookmarked, onBookmark }) {
   const grad = REGION_GRADIENTS[trip.region] || "linear-gradient(135deg,#8B7355,#C4A882)";
   const emoji = REGION_EMOJI[trip.region] || "🌍";
   return (
-    <div onClick={() => onClick(trip)} style={{ background:C.white, border:`${trip.featured?"2px solid #C4A882":"1px solid "+C.tide}`, borderRadius:"16px", overflow:"hidden", cursor:"pointer", transition:"all .2s", boxShadow:trip.featured?`0 4px 20px rgba(196,168,130,0.25)`:`0 2px 12px rgba(44,62,80,0.07)` }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow=`0 10px 32px rgba(28,43,58,0.15)`; e.currentTarget.style.transform="translateY(-3px)"; e.currentTarget.style.borderColor=C.amber; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow=trip.featured?`0 4px 20px rgba(196,168,130,0.25)`:`0 2px 12px rgba(44,62,80,0.07)`; e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=trip.featured?"#C4A882":C.tide; }}>
+    <div onClick={() => onClick(trip)} className="tc-card" style={{ background:C.white, border:`${trip.featured?"2px solid #C4A882":"1px solid "+C.tide}`, borderRadius:"16px", overflow:"hidden", cursor:"pointer", transition:"transform .18s ease, box-shadow .18s ease, border-color .18s ease", boxShadow:trip.featured?`0 4px 20px rgba(196,168,130,0.25)`:`0 2px 12px rgba(44,62,80,0.07)` }}>
       {/* Image / placeholder */}
       <div style={{ height:"148px", background:trip.image ? "transparent" : grad, position:"relative", display:"flex", alignItems:"flex-end", padding:"14px", overflow:"hidden" }}>
         {trip.image
@@ -1082,7 +1153,7 @@ function TripCard({ trip, onClick, isBookmarked, onBookmark }) {
         <div style={{ position:"absolute", top:"12px", right:"12px", background:"rgba(0,0,0,0.25)", borderRadius:"20px", padding:"3px 10px", fontSize:"10px", color:"rgba(255,255,255,0.9)", fontWeight:600 }}>{trip.duration}</div>
         {trip.featured && <div style={{ position:"absolute", top:"12px", left:"44px", background:"linear-gradient(135deg,#C4A882,#A8896A)", borderRadius:"20px", padding:"3px 10px", fontSize:"10px", color:"#fff", fontWeight:700, display:"flex", alignItems:"center", gap:"4px" }}>✦ Featured</div>}
         {/* Bookmark button */}
-        <button onClick={e => { e.stopPropagation(); onBookmark && onBookmark(trip.id); }} style={{ position:"absolute", top:"10px", left:"12px", background:"rgba(0,0,0,0.3)", border:"none", borderRadius:"50%", width:"28px", height:"28px", cursor:"pointer", fontSize:"14px", display:"flex", alignItems:"center", justifyContent:"center", transition:"all .15s" }}
+        <button onClick={e => { e.stopPropagation(); onBookmark && onBookmark(trip.id); }} style={{ position:"absolute", top:"10px", left:"12px", background:"rgba(0,0,0,0.3)", border:"none", borderRadius:"50%", width:"28px", height:"28px", cursor:"pointer", fontSize:"14px", display:"flex", alignItems:"center", justifyContent:"center", transition:"background-color .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease" }}
           title={isBookmarked ? "Remove bookmark" : "Bookmark this trip"}>
           {isBookmarked ? "🔖" : "🏷️"}
         </button>
@@ -1834,8 +1905,7 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
                 </div>
               ) : (
                 <div onClick={() => photoRef.current.click()} style={{ border:`2px dashed ${C.tide}`, borderRadius:"10px", padding:"20px", textAlign:"center", cursor:"pointer", background:C.seafoam, marginBottom:"8px" }}
-                  onMouseEnter={e=>e.currentTarget.style.borderColor=C.amber}
-                  onMouseLeave={e=>e.currentTarget.style.borderColor=C.tide}>
+                  className="tc-hover-border">
                   <div style={{ fontSize:"24px", marginBottom:"6px" }}>🖼️</div>
                   <div style={{ fontSize:"12px", fontWeight:600, color:C.slateMid }}>Upload a cover photo</div>
                   <div style={{ fontSize:"10px", color:C.muted, marginTop:"3px" }}>JPG, PNG, WEBP, HEIC · Max 5MB</div>
@@ -1869,9 +1939,7 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
                   </div>
                 )}
                 {galleryFiles.length < 5 && (
-                  <div onClick={() => galleryRef.current.click()} style={{ border:`2px dashed ${C.tide}`, borderRadius:"8px", padding:"12px", textAlign:"center", cursor:"pointer", background:C.seafoam, fontSize:"11px", color:C.slateMid, fontWeight:600 }}
-                    onMouseEnter={e=>e.currentTarget.style.borderColor=C.amber}
-                    onMouseLeave={e=>e.currentTarget.style.borderColor=C.tide}>
+                  <div onClick={() => galleryRef.current.click()} className="tc-hover-border" style={{ border:`2px dashed ${C.tide}`, borderRadius:"8px", padding:"12px", textAlign:"center", cursor:"pointer", background:C.seafoam, fontSize:"11px", color:C.slateMid, fontWeight:600 }}>
                     + Add photos ({5 - galleryFiles.length} remaining)
                   </div>
                 )}
@@ -1903,7 +1971,7 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
             <div style={{ fontSize:"48px", marginBottom:"14px" }}>🎉</div>
             <div style={{ fontSize:"20px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif", marginBottom:"8px" }}>Itinerary Published!</div>
             <div style={{ fontSize:"13px", color:C.slateLight, maxWidth:"380px", margin:"0 auto 24px", lineHeight:1.6 }}>Your trip passed all checks and is now live on TripCopycat.</div>
-            <button onClick={onClose} style={{ padding:"11px 28px", borderRadius:"10px", border:"none", background:C.cta, color:C.white, fontWeight:700, fontSize:"13px", cursor:"pointer" }}>View the site</button>
+            <button className="tc-btn" onClick={onClose} style={{ padding:"11px 28px", borderRadius:"10px", border:"none", background:C.cta, color:C.white, fontWeight:700, fontSize:"13px", cursor:"pointer" }}>View the site</button>
           </div>
         )}
 
@@ -1912,7 +1980,7 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
             <div style={{ fontSize:"40px", marginBottom:"14px" }}>🎉</div>
             <div style={{ fontSize:"18px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif", marginBottom:"8px" }}>Trip Submitted!</div>
             <div style={{ fontSize:"13px", color:C.slateLight, maxWidth:"380px", margin:"0 auto 16px", lineHeight:1.6 }}>Thanks for contributing to TripCopycat! Your trip is under review and will be published shortly. We'll be in touch at <strong>{submitterEmail}</strong>.</div>
-            <button onClick={onClose} style={{ padding:"11px 28px", borderRadius:"10px", border:"none", background:C.cta, color:C.ctaText, fontWeight:700, fontSize:"13px", cursor:"pointer" }}>Done</button>
+            <button className="tc-btn" onClick={onClose} style={{ padding:"11px 28px", borderRadius:"10px", border:"none", background:C.cta, color:C.ctaText, fontWeight:700, fontSize:"13px", cursor:"pointer" }}>Done</button>
           </div>
         )}
 
@@ -1926,7 +1994,7 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
             </label>
             <div style={{ display:"flex", justifyContent:"space-between" }}>
               <button onClick={() => setStep("prompt")} style={{ padding:"9px 18px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"12px", fontWeight:600, cursor:"pointer" }}>Back</button>
-              <button onClick={handleSubmit} disabled={!agreedToTerms} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:agreedToTerms?C.cta:C.tide, color:agreedToTerms?C.ctaText:C.muted, fontSize:"12px", fontWeight:700, cursor:agreedToTerms?"pointer":"not-allowed", transition:"all .15s" }}>Submit Trip</button>
+              <button onClick={handleSubmit} disabled={!agreedToTerms} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:agreedToTerms?C.cta:C.tide, color:agreedToTerms?C.ctaText:C.muted, fontSize:"12px", fontWeight:700, cursor:agreedToTerms?"pointer":"not-allowed", transition:"background-color .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease" }}>Submit Trip</button>
             </div>
           </div>
         )}
@@ -2342,16 +2410,14 @@ function HybridPhotoSelector({ onChange }) {
             ))}
             {files.length < 30 && (
               <div onClick={() => ref.current.click()} style={{ width:"52px", height:"52px", borderRadius:"6px", border:`2px dashed ${C.tide}`, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:"20px", color:C.muted, background:C.seafoam }}
-                onMouseEnter={e=>e.currentTarget.style.borderColor=C.amber}
-                onMouseLeave={e=>e.currentTarget.style.borderColor=C.tide}>+</div>
+                className="tc-hover-border">+</div>
             )}
           </div>
           <div style={{ fontSize:"10px", color:C.muted }}>{files.length} photo{files.length!==1?"s":""} selected · {30-files.length} remaining · Used for AI analysis only</div>
         </div>
       ) : (
         <div onClick={() => ref.current.click()} style={{ border:`2px dashed ${C.tide}`, borderRadius:"8px", padding:"14px", textAlign:"center", cursor:"pointer", background:C.white, fontSize:"12px", color:C.slateMid }}
-          onMouseEnter={e=>e.currentTarget.style.borderColor=C.amber}
-          onMouseLeave={e=>e.currentTarget.style.borderColor=C.tide}>
+          className="tc-hover-border">
           Tap to add trip photos · up to 30 · Used for AI analysis only
         </div>
       )}
@@ -2392,7 +2458,7 @@ function ResetPasswordModal({ onClose }) {
               <div style={{ fontSize:"36px", marginBottom:"12px" }}>✅</div>
               <div style={{ fontSize:"14px", fontWeight:700, color:C.slate, marginBottom:"8px" }}>Password updated!</div>
               <div style={{ fontSize:"12px", color:C.slateLight, marginBottom:"20px" }}>You can now sign in with your new password.</div>
-              <button onClick={onClose} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", background:C.cta, color:C.ctaText, fontWeight:700, fontSize:"14px", cursor:"pointer" }}>Done</button>
+              <button className="tc-btn" onClick={onClose} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", background:C.cta, color:C.ctaText, fontWeight:700, fontSize:"14px", cursor:"pointer" }}>Done</button>
             </div>
           ) : (
             <div>
@@ -2479,7 +2545,7 @@ function AuthModal({ onClose, onSuccess }) {
               <div style={{ fontSize:"36px", marginBottom:"12px" }}>📧</div>
               <div style={{ fontSize:"14px", fontWeight:700, color:C.slate, marginBottom:"8px" }}>Reset link sent!</div>
               <div style={{ fontSize:"12px", color:C.slateLight, lineHeight:1.6, marginBottom:"20px" }}>Check your email at <strong>{email}</strong> for a link to reset your password.</div>
-              <button onClick={onClose} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", background:C.cta, color:C.ctaText, fontWeight:700, fontSize:"14px", cursor:"pointer" }}>Done</button>
+              <button className="tc-btn" onClick={onClose} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", background:C.cta, color:C.ctaText, fontWeight:700, fontSize:"14px", cursor:"pointer" }}>Done</button>
             </div>
           )}
 
@@ -2504,7 +2570,7 @@ function AuthModal({ onClose, onSuccess }) {
             <div>
               <div style={{ display:"flex", background:C.seafoam, borderRadius:"10px", padding:"3px", marginBottom:"20px" }}>
                 {[["login","Sign In"],["register","Create Account"]].map(([m,l]) => (
-                  <button key={m} onClick={() => { setMode(m); setError(""); }} style={{ flex:1, padding:"8px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:700, background:mode===m?C.white:"transparent", color:mode===m?C.slate:C.muted, boxShadow:mode===m?`0 1px 4px rgba(28,43,58,0.1)`:"none", transition:"all .15s" }}>{l}</button>
+                  <button key={m} onClick={() => { setMode(m); setError(""); }} style={{ flex:1, padding:"8px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:700, background:mode===m?C.white:"transparent", color:mode===m?C.slate:C.muted, boxShadow:mode===m?`0 1px 4px rgba(28,43,58,0.1)`:"none", transition:"background-color .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease" }}>{l}</button>
                 ))}
               </div>
               {mode === "register" && (
@@ -2522,7 +2588,7 @@ function AuthModal({ onClose, onSuccess }) {
                 <input style={inp} type="password" placeholder={mode==="register"?"At least 6 characters":"Your password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&(mode==="login"?handleLogin():handleRegister())} />
               </div>
               {error && <div style={{ fontSize:"12px", color:C.red, background:C.redBg, padding:"8px 12px", borderRadius:"7px", marginBottom:"10px" }}>{error}</div>}
-              <button onClick={mode==="login"?handleLogin:handleRegister} disabled={loading} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", background:loading?C.tide:C.cta, color:loading?C.muted:C.ctaText, fontWeight:700, fontSize:"14px", cursor:loading?"not-allowed":"pointer", fontFamily:"'Nunito',sans-serif", transition:"all .15s" }}>
+              <button onClick={mode==="login"?handleLogin:handleRegister} disabled={loading} style={{ width:"100%", padding:"12px", borderRadius:"10px", border:"none", background:loading?C.tide:C.cta, color:loading?C.muted:C.ctaText, fontWeight:700, fontSize:"14px", cursor:loading?"not-allowed":"pointer", fontFamily:"'Nunito',sans-serif", transition:"background-color .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease" }}>
                 {loading ? "Please wait…" : mode==="login" ? "Sign In" : "Create Account"}
               </button>
               {mode === "login" && (
@@ -2615,9 +2681,8 @@ function ProfilePage({ authorName, allTrips, onClose, onTripClick, currentUser, 
               {contributorTrips.map(trip => (
                 <div key={trip.id} style={{ position:"relative" }}>
                   <div onClick={() => { onTripClick(trip); onClose(); }}
-                    style={{ background:C.white, border:`1px solid ${C.tide}`, borderRadius:"14px", padding:"18px", cursor:"pointer", transition:"all .2s", boxShadow:`0 1px 4px rgba(28,43,58,0.05)` }}
-                    onMouseEnter={e => { e.currentTarget.style.boxShadow=`0 6px 20px rgba(28,43,58,0.1)`; e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.borderColor=C.amber; }}
-                    onMouseLeave={e => { e.currentTarget.style.boxShadow=`0 1px 4px rgba(28,43,58,0.05)`; e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.borderColor=C.tide; }}>
+                    style={{ background:C.white, border:`1px solid ${C.tide}`, borderRadius:"14px", padding:"18px", cursor:"pointer", transition:"transform .18s ease, box-shadow .18s ease, border-color .18s ease", boxShadow:`0 1px 4px rgba(28,43,58,0.05)` }}
+                    className="tc-lift">
                     <div style={{ fontSize:"10px", fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"4px" }}>{trip.region}</div>
                     <div style={{ fontSize:"15px", fontWeight:700, color:C.slate, fontFamily:"'Playfair Display',serif", marginBottom:"4px", lineHeight:1.2 }}>{trip.title}</div>
                     <div style={{ fontSize:"11px", color:C.slateLight, marginBottom:"8px" }}>{trip.destination} · {trip.duration}</div>
@@ -2671,10 +2736,10 @@ function AdminLoginModal({ onSuccess, onClose }) {
           onChange={e => setPw(e.target.value)}
           onKeyDown={e => e.key === "Enter" && attempt()}
           placeholder="Enter admin password"
-          style={{ width:"100%", padding:"11px 14px", borderRadius:"10px", border:`2px solid ${error?C.red:C.tide}`, fontSize:"14px", outline:"none", boxSizing:"border-box", marginBottom:"12px", background:error?C.redBg:C.white, color:C.slate, transition:"all .2s" }}
+          style={{ width:"100%", padding:"11px 14px", borderRadius:"10px", border:`2px solid ${error?C.red:C.tide}`, fontSize:"14px", outline:"none", boxSizing:"border-box", marginBottom:"12px", background:error?C.redBg:C.white, color:C.slate, transition:"transform .18s ease, box-shadow .18s ease, border-color .18s ease" }}
         />
         {error && <div style={{ fontSize:"12px", color:C.red, textAlign:"center", marginBottom:"10px", fontWeight:600 }}>Incorrect password — try again</div>}
-        <button onClick={attempt} style={{ width:"100%", padding:"11px", borderRadius:"10px", border:"none", background:C.cta, color:C.white, fontSize:"14px", fontWeight:700, cursor:"pointer", marginBottom:"10px" }}>
+        <button className="tc-btn" onClick={attempt} style={{ width:"100%", padding:"11px", borderRadius:"10px", border:"none", background:C.cta, color:C.white, fontSize:"14px", fontWeight:700, cursor:"pointer", marginBottom:"10px" }}>
           Enter Admin Panel
         </button>
         <button onClick={onClose} style={{ width:"100%", padding:"9px", borderRadius:"10px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"13px", fontWeight:600, cursor:"pointer" }}>
@@ -3020,7 +3085,7 @@ function FeedbackModal({ onClose }) {
             <div style={{ fontSize:"44px", marginBottom:"14px" }}>🙏</div>
             <div style={{ fontSize:"18px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif", marginBottom:"8px" }}>Thank you!</div>
             <div style={{ fontSize:"13px", color:C.slateLight, lineHeight:1.6, marginBottom:"24px" }}>Your feedback helps us build a better TripCopycat. We read every message.</div>
-            <button onClick={onClose} style={{ padding:"10px 28px", borderRadius:"10px", border:"none", background:C.cta, color:C.ctaText, fontWeight:700, fontSize:"13px", cursor:"pointer" }}>Close</button>
+            <button className="tc-btn" onClick={onClose} style={{ padding:"10px 28px", borderRadius:"10px", border:"none", background:C.cta, color:C.ctaText, fontWeight:700, fontSize:"13px", cursor:"pointer" }}>Close</button>
           </div>
         ) : (
           <div style={{ padding:"24px 28px" }}>
@@ -3040,7 +3105,7 @@ function FeedbackModal({ onClose }) {
             </div>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <button onClick={onClose} style={{ padding:"9px 18px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateLight, fontSize:"12px", fontWeight:600, cursor:"pointer" }}>Cancel</button>
-              <button onClick={handleSend} disabled={!message.trim() || sending} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:message.trim()?C.cta:C.tide, color:message.trim()?C.ctaText:C.muted, fontSize:"12px", fontWeight:700, cursor:message.trim()?"pointer":"not-allowed", transition:"all .15s" }}>
+              <button onClick={handleSend} disabled={!message.trim() || sending} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:message.trim()?C.cta:C.tide, color:message.trim()?C.ctaText:C.muted, fontSize:"12px", fontWeight:700, cursor:message.trim()?"pointer":"not-allowed", transition:"background-color .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease" }}>
                 {sending ? "Sending…" : "Send Feedback →"}
               </button>
             </div>
@@ -3107,7 +3172,7 @@ function LegalModal({ onClose }) {
 
         {/* Footer */}
         <div style={{ padding:"16px 32px", borderTop:`1px solid ${C.tide}`, background:C.seafoam, display:"flex", justifyContent:"flex-end" }}>
-          <button onClick={onClose} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:C.cta, color:C.ctaText, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>Close</button>
+          <button className="tc-btn" onClick={onClose} style={{ padding:"9px 24px", borderRadius:"8px", border:"none", background:C.cta, color:C.ctaText, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>Close</button>
         </div>
       </div>
     </div>
@@ -3341,6 +3406,7 @@ export default function App() {
 
   return (
     <div style={{ minHeight:"100vh", background:C.seafoam, fontFamily:"'Nunito',system-ui,sans-serif", overflowX:"hidden" }}>
+      <GlobalStyles />
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400;1,700&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
       {/* Admin banner */}
@@ -3361,9 +3427,8 @@ export default function App() {
             <strong style={{ color:C.cta }}>Welcome to the TripCopycat Beta!</strong> We're currently building the world's first travel blueprint library. If you find a bug or have a suggestion, we'd love your feedback as we grow.
           </p>
         </div>
-        <button onClick={() => setShowFeedback(true)} style={{ flexShrink:0, padding:"7px 16px", borderRadius:"20px", border:"1px solid rgba(196,168,130,0.6)", background:"rgba(196,168,130,0.15)", color:C.cta, fontSize:"12px", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", transition:"all .15s" }}
-          onMouseEnter={e=>{e.currentTarget.style.background="rgba(196,168,130,0.3)"}}
-          onMouseLeave={e=>{e.currentTarget.style.background="rgba(196,168,130,0.15)"}}>
+        <button onClick={() => setShowFeedback(true)} style={{ flexShrink:0, padding:"7px 16px", borderRadius:"20px", border:"1px solid rgba(196,168,130,0.6)", background:"rgba(196,168,130,0.15)", color:C.cta, fontSize:"12px", fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", transition:"background-color .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease, opacity .15s ease" }}
+          className="tc-btn-ghost">
           Provide Feedback →
         </button>
       </div>
@@ -3432,7 +3497,7 @@ export default function App() {
               <div style={{ fontSize:"10px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"10px" }}>Trip Type</div>
               <div style={{ display:"flex", flexWrap:"wrap", gap:"5px" }}>
                 {(showMoreTags ? TAGS : PRIMARY_TAGS).map(t => (
-                  <button key={t} onClick={() => setTag(t)} style={{ padding:"3px 9px", borderRadius:"20px", border:`1px solid ${tag===t?C.slate:C.tide}`, background:tag===t?C.slate:C.white, color:tag===t?C.white:C.slateLight, fontSize:"10px", fontWeight:600, cursor:"pointer", transition:"all .12s" }}>{t}</button>
+                  <button key={t} onClick={() => setTag(t)} className="tc-tag" style={{ padding:"3px 9px", borderRadius:"20px", border:`1px solid ${tag===t?C.slate:C.tide}`, background:tag===t?C.slate:C.white, color:tag===t?C.white:C.slateLight, fontSize:"10px", fontWeight:600, cursor:"pointer", transition:"background-color .12s ease, border-color .12s ease, color .12s ease" }}>{t}</button>
                 ))}
               </div>
               <button onClick={() => setShowMoreTags(p=>!p)} style={{ marginTop:"8px", fontSize:"10px", fontWeight:700, color:C.amber, background:"none", border:"none", cursor:"pointer", padding:"2px 0" }}>
@@ -3444,7 +3509,7 @@ export default function App() {
             <div style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, padding:"14px 16px", marginBottom:"14px", boxShadow:`0 1px 4px rgba(44,62,80,0.05)` }}>
               <div style={{ fontSize:"10px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"10px" }}>Region</div>
               {REGIONS.map(r => (
-                <button key={r} onClick={() => setRegion(r)} style={{ display:"block", width:"100%", textAlign:"left", padding:"6px 10px", borderRadius:"7px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:region===r?700:400, background:region===r?C.sandDeep:"transparent", color:region===r?C.slate:C.slateLight, marginBottom:"2px", transition:"all .12s" }}>
+                <button key={r} onClick={() => setRegion(r)} style={{ display:"block", width:"100%", textAlign:"left", padding:"6px 10px", borderRadius:"7px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:region===r?700:400, background:region===r?C.sandDeep:"transparent", color:region===r?C.slate:C.slateLight, marginBottom:"2px", transition:"background-color .12s ease, border-color .12s ease, color .12s ease" }}>
                   {region===r && <span style={{ color:C.amber, marginRight:"5px" }}>▸</span>}{r}
                 </button>
               ))}
@@ -3454,7 +3519,7 @@ export default function App() {
             <div style={{ background:C.white, borderRadius:"12px", border:`1px solid ${C.tide}`, padding:"14px 16px", marginBottom:"14px", boxShadow:`0 1px 4px rgba(44,62,80,0.05)` }}>
               <div style={{ fontSize:"10px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"10px" }}>Trip Length</div>
               {DURATION_FILTERS.map(d => (
-                <button key={d} onClick={() => setDuration(d)} style={{ display:"block", width:"100%", textAlign:"left", padding:"6px 10px", borderRadius:"7px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:duration===d?700:400, background:duration===d?C.sandDeep:"transparent", color:duration===d?C.slate:C.slateLight, marginBottom:"2px", transition:"all .12s" }}>
+                <button key={d} onClick={() => setDuration(d)} style={{ display:"block", width:"100%", textAlign:"left", padding:"6px 10px", borderRadius:"7px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:duration===d?700:400, background:duration===d?C.sandDeep:"transparent", color:duration===d?C.slate:C.slateLight, marginBottom:"2px", transition:"background-color .12s ease, border-color .12s ease, color .12s ease" }}>
                   {duration===d && <span style={{ color:C.amber, marginRight:"5px" }}>▸</span>}{d}
                 </button>
               ))}
@@ -3465,8 +3530,7 @@ export default function App() {
               <div style={{ fontSize:"10px", fontWeight:700, color:C.muted, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:"10px" }}>Top Contributors</div>
               {[...allTrips.reduce((acc, t) => { acc.set(t.author, (acc.get(t.author)||0)+1); return acc; }, new Map())].sort((a,b)=>b[1]-a[1]).slice(0,5).map(([author, count]) => (
                 <div key={author} onClick={() => setViewingProfile(author)} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"5px 0", cursor:"pointer", borderBottom:`1px solid ${C.seafoamDeep}` }}
-                  onMouseEnter={e=>e.currentTarget.style.opacity="0.7"}
-                  onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                  >
                   <div style={{ display:"flex", alignItems:"center", gap:"7px" }}>
                     <div style={{ width:"22px", height:"22px", borderRadius:"50%", background:C.cta, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"10px", fontWeight:800, color:C.ctaText, flexShrink:0 }}>{author.charAt(0).toUpperCase()}</div>
                     <span style={{ fontSize:"12px", color:C.amber, fontWeight:600 }}>{author}</span>
@@ -3629,8 +3693,7 @@ export default function App() {
       {/* Floating feedback button — bottom-left on mobile to avoid covering trip cards */}
       <button onClick={() => setShowFeedback(true)}
         style={{ position:"fixed", bottom:"20px", left:isMobile()?"16px":"auto", right:isMobile()?"auto":"24px", zIndex:500, background:`linear-gradient(135deg, #1C2B3A, #C1692A)`, color:C.white, border:"none", borderRadius:"50px", padding:isMobile()?"9px 14px":"11px 20px", fontSize:isMobile()?"11px":"12px", fontWeight:700, cursor:"pointer", boxShadow:`0 4px 18px rgba(28,43,58,0.35)`, display:"flex", alignItems:"center", gap:"6px", transition:"transform .15s" }}
-        onMouseEnter={e=>e.currentTarget.style.transform="translateY(-2px)"}
-        onMouseLeave={e=>e.currentTarget.style.transform="translateY(0)"}>
+        >
         {isMobile() ? "💬" : "💬 Feedback"}
       </button>
 
