@@ -971,7 +971,7 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
                 </div>
             </div>
             <div style={{ marginTop:"12px", display:"flex", gap:"10px", flexWrap:"wrap", alignItems:"center" }}>
-              <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.95)", fontWeight:500, textShadow:"0 1px 3px rgba(0,0,0,0.4)" }}>by <strong>{trip.author}</strong></span>
+              <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.95)", fontWeight:500, textShadow:"0 1px 3px rgba(0,0,0,0.4)" }}>by <strong onClick={() => { onClose(); setTimeout(() => window.__setViewingProfile && window.__setViewingProfile(trip.author), 200); }} style={{ cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted" }}>{trip.author}</strong></span>
               <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.95)", fontWeight:500, textShadow:"0 1px 3px rgba(0,0,0,0.4)" }}>{trip.travelers}</span>
               {trip.tags.map(t => <span key={t} style={{ fontSize:"10px", fontWeight:700, padding:"2px 9px", borderRadius:"20px", background:"rgba(0,0,0,0.3)", color:"#FFFFFF", border:"1px solid rgba(255,255,255,0.4)" }}>{t}</span>)}
             </div>
@@ -1184,7 +1184,7 @@ function TripCard({ trip, onClick, isBookmarked, onBookmark }) {
           <span style={{ fontWeight:700, color:C.green }}>❤️ </span>{trip.loves.substring(0,100)}…
         </div>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:`1px solid ${C.seafoamDeep}`, paddingTop:"10px" }}>
-          <div style={{ fontSize:"11px", color:C.muted }}>by <strong onClick={e => { e.stopPropagation(); window.__setViewingProfile && window.__setViewingProfile(trip.author); }} style={{ color:C.amber, cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted" }}>{trip.author}</strong> · {trip.date}</div>
+          <div style={{ fontSize:"11px", color:C.muted }}>by <strong onClick={e => { e.stopPropagation(); if (window.__closeTripModal) window.__closeTripModal(); setTimeout(() => window.__setViewingProfile && window.__setViewingProfile(trip.author), window.__closeTripModal ? 200 : 0); }} style={{ color:C.amber, cursor:"pointer", textDecoration:"underline", textDecorationStyle:"dotted" }}>{trip.author}</strong> · {trip.date}</div>
           <div style={{ fontSize:"11px", color:C.slateMid, fontWeight:600 }}>{trip.travelers}</div>
         </div>
       </div>
@@ -3261,7 +3261,8 @@ export default function App() {
   useEffect(() => { fetchTrips(); }, []);
 
   const openTrip = (trip) => { setSelected(trip); window.history.pushState(null, "", `/trip/${trip.id}`); };
-  const closeTrip = () => { setSelected(null); window.history.pushState(null, "", "/"); };
+  const closeTrip = () => { setSelected(null); window.history.pushState(null, "", "/"); window.__closeTripModal = null; };
+  useEffect(() => { window.__closeTripModal = selected ? closeTrip : null; }, [selected]);
 
   const allTrips = [...dbTrips, ...trips];
 
