@@ -1336,7 +1336,7 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
       setCheckingDraft(false);
       return;
     }
-    supabase.from("drafts").select("form_data, updated_at").eq("user_id", currentUser.id).single()
+    supabase.from("drafts").select("form_data, updated_at").eq("user_id", currentUser.id).maybeSingle()
       .then(({ data }) => {
         if (data?.form_data) setDraftExists(true);
         else {
@@ -1392,7 +1392,7 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
 
   const loadDraft = async () => {
     if (currentUser) {
-      const { data } = await supabase.from("drafts").select("form_data").eq("user_id", currentUser.id).single();
+      const { data } = await supabase.from("drafts").select("form_data").eq("user_id", currentUser.id).maybeSingle();
       if (data?.form_data) {
         setForm(data.form_data);
         setDraftExists(false);
@@ -2669,7 +2669,7 @@ function ProfilePage({ authorName, allTrips, onClose, onTripClick, currentUser, 
   useEffect(() => {
     supabase.from("profiles").select("*")
       .ilike("display_name", authorName)
-      .single()
+      .maybeSingle()
       .then(({ data }) => { setProfile(data); setLoading(false); });
   }, [authorName]);
 
@@ -3331,7 +3331,7 @@ export default function App() {
   // Check for draft when user logs in
   useEffect(() => {
     if (!currentUser) { setHasDraft(false); return; }
-    supabase.from("drafts").select("id").eq("user_id", currentUser.id).single()
+    supabase.from("drafts").select("id").eq("user_id", currentUser.id).maybeSingle()
       .then(({ data }) => setHasDraft(!!data));
   }, [currentUser]);
 
