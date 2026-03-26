@@ -72,6 +72,9 @@ const GLOBAL_STYLES = `
   /* Sidebar/filter hover */
   .tc-sidebar-btn:hover { background-color: rgba(196,168,130,0.1) !important; }
 
+  /* Spinner animation */
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
   /* Modal entry animation */
   @keyframes tc-modal-in {
     from { opacity: 0; transform: scale(0.96) translateY(8px); }
@@ -1317,6 +1320,7 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
   const [checkingDraft, setCheckingDraft] = useState(true);
   const photoRef = useRef(null);
   const autoSaveTimer = useRef(null);
+  const [submitError, setSubmitError] = useState("");
 
   // Check for existing draft on mount — also check localStorage fallback
   useEffect(() => {
@@ -1563,22 +1567,41 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
 
   const handleSubmit = async () => {
     if (!submitterName || !submitterEmail) { alert("Please add your name and email."); return; }
+    setSubmitError("");
     setStep("submitting");
-    const photoUrl = await uploadPhoto();
-    const galleryUrls = await uploadGallery();
-    const tripWithPhoto = { ...form, image: photoUrl || "", focalPoint, gallery: galleryUrls };
-    const result = runContentFilter(tripWithPhoto);
-    setFilterResult(result);
-    await supabase.from("submissions").insert([{
-      trip_data: tripWithPhoto, submitter_name: submitterName, submitter_email: submitterEmail,
-      status: result.passed ? "pending" : "flagged",
-      ai_flagged: !result.passed,
-      ai_flag_reason: result.flags.join("; "),
-      user_id: currentUser?.id || null
-    }]);
-    // Clear draft on successful submit
-    if (currentUser) await supabase.from("drafts").delete().eq("user_id", currentUser.id);
-    setStep("flagged");
+    try {
+      // Upload photos with 30s timeout each
+      const photoUrl = await Promise.race([
+        uploadPhoto(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("Photo upload timed out")), 30000))
+      ]).catch(() => null);
+      const galleryUrls = await Promise.race([
+        uploadGallery(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("Gallery upload timed out")), 30000))
+      ]).catch(() => []);
+
+      const tripWithPhoto = { ...form, image: photoUrl || "", focalPoint, gallery: galleryUrls };
+      const result = runContentFilter(tripWithPhoto);
+      setFilterResult(result);
+
+      const { error } = await supabase.from("submissions").insert([{
+        trip_data: tripWithPhoto, submitter_name: submitterName, submitter_email: submitterEmail,
+        status: result.passed ? "pending" : "flagged",
+        ai_flagged: !result.passed,
+        ai_flag_reason: result.flags.join("; "),
+        user_id: currentUser?.id || null
+      }]);
+
+      if (error) throw error;
+
+      // Clear draft on successful submit
+      if (currentUser) await supabase.from("drafts").delete().eq("user_id", currentUser.id);
+      setStep("flagged");
+    } catch (err) {
+      console.error("Submit error:", err);
+      setSubmitError(err.message || "Submission failed. Your draft is saved — please try again.");
+      setStep("form");
+    }
   };
 
   return (
@@ -1976,9 +1999,10 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
 
         {step === "submitting" && (
           <div style={{ padding:"60px 28px", textAlign:"center" }}>
-            <div style={{ fontSize:"36px", marginBottom:"14px" }}>🔍</div>
-            <div style={{ fontSize:"16px", fontWeight:700, color:C.slate }}>Reviewing submission…</div>
-            <div style={{ fontSize:"12px", color:C.slateLight, marginTop:"6px" }}>Running content checks.</div>
+            <div style={{ fontSize:"36px", marginBottom:"14px", animation:"spin 1.5s linear infinite", display:"inline-block" }}>⏳</div>
+            <div style={{ fontSize:"16px", fontWeight:700, color:C.slate, marginBottom:"6px" }}>Submitting your trip…</div>
+            <div style={{ fontSize:"12px", color:C.slateLight, marginBottom:"24px" }}>Uploading photos and saving. This may take a moment on slower connections.</div>
+            <button onClick={() => { setStep("form"); setSubmitError("Submission cancelled — your draft is still here."); }} style={{ fontSize:"11px", color:C.muted, background:"none", border:`1px solid ${C.tide}`, borderRadius:"6px", padding:"6px 16px", cursor:"pointer" }}>Cancel</button>
           </div>
         )}
 
@@ -2000,6 +2024,11 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
           </div>
         )}
 
+        {step === "form" && submitError && (
+          <div style={{ padding:"10px 28px", background:C.redBg, borderTop:`1px solid ${C.red}` }}>
+            <div style={{ fontSize:"12px", color:C.red, fontWeight:600 }}>⚠️ {submitError}</div>
+          </div>
+        )}
         {step === "form" && (
           <div style={{ padding:"14px 28px", borderTop:`1px solid ${C.tide}`, background:C.seafoam }}>
             <label style={{ display:"flex", alignItems:"flex-start", gap:"10px", marginBottom:"12px", cursor:"pointer" }}>
