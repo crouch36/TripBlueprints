@@ -2,6 +2,8 @@
   "rewrites": [
     { "source": "/trip/:id", "destination": "/api/trip/:id" },
     { "source": "/((?!api/)(?!sitemap\\.xml$).*)", "destination": "/index.html" }
+    { "source": "/sitemap.xml", "destination": "/api/sitemap.xml" }
+
   ],
   "functions": {
     "api/gemini.js": {
