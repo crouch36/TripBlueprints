@@ -1,6 +1,14 @@
 {
   "rewrites": [
-    { "source": "/trip/:id", "destination": "/api/trip/[id]" },
+    { "source": "/trip/:id", "destination": "/api/trip/:id" },
     { "source": "/((?!api/)(?!sitemap\\.xml$).*)", "destination": "/index.html" }
-  ]
+  ],
+  "functions": {
+    "api/gemini.js": {
+      "maxDuration": 60
+    },
+    "api/trip/[id].js": {
+      "maxDuration": 10
+    }
+  }
 }

@@ -1,14 +1,6 @@
 const MODEL = "gemini-2.5-flash";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: "20mb", // photos can be large
-    },
-  },
-};
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
@@ -21,26 +13,30 @@ export default async function handler(req, res) {
     return;
   }
 
+  let body;
   try {
-    // Parse body if it came in as a string
-    const body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+    body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+  } catch (e) {
+    res.status(400).json({ error: "Failed to parse request body: " + e.message });
+    return;
+  }
 
-    if (!body || !body.contents) {
-      res.status(400).json({ error: "Invalid request body — missing contents" });
-      return;
-    }
+  if (!body || !body.contents) {
+    res.status(400).json({ error: "Invalid body — missing contents", received: typeof body });
+    return;
+  }
 
-    // Disable thinking to get clean JSON output
-    const requestBody = {
-      ...body,
-      generationConfig: {
-        ...(body.generationConfig || {}),
-        thinkingConfig: { thinkingBudget: 0 },
-      },
-    };
+  const requestBody = {
+    ...body,
+    generationConfig: {
+      ...(body.generationConfig || {}),
+      thinkingConfig: { thinkingBudget: 0 },
+    },
+  };
 
+  try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90000);
+    const timeout = setTimeout(() => controller.abort(), 55000);
 
     const upstream = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
       method: "POST",
