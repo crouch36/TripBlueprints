@@ -947,7 +947,7 @@ function DailyItinerary({ days }) {
 
 // ── Trip Modal ────────────────────────────────────────────────────────────────
 
-function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
+function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark, isAdmin }) {
   const [view, setView] = useState("overview");
   const [tab, setTab] = useState("all");
   const [showExport, setShowExport] = useState(false);
@@ -999,6 +999,51 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark }) {
                   <button onClick={handleTwitterShare} onTouchEnd={e=>{e.preventDefault();handleTwitterShare();}} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation" }}>𝕏</button>
                   <button onClick={() => onBookmark && onBookmark(trip.id)} onTouchEnd={e=>{e.preventDefault(); onBookmark && onBookmark(trip.id);}} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation" }}>{isBookmarked ? "🔖" : "🏷️"}</button>
                   <button onClick={() => setShowExport(true)} onTouchEnd={e=>{e.preventDefault();setShowExport(true);}} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation" }}>📤</button>
+                  {/* Blueprint purchase button — admin only until launch */}
+                  {isAdmin && (() => {
+                    const handleBlueprint = async () => {
+                      try {
+                        const res = await fetch("/api/create-checkout", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ tripId: trip.id, tripTitle: trip.title }),
+                        });
+                        const { url, error } = await res.json();
+                        if (error) { alert("Could not start checkout: " + error); return; }
+                        window.location.href = url;
+                      } catch (e) {
+                        alert("Checkout failed. Please try again.");
+                      }
+                    };
+                    return (
+                      <button onClick={handleBlueprint} onTouchEnd={e=>{e.preventDefault();handleBlueprint();}} style={{ background:"#FAF7F2", color:"#1C2B3A", border:"2px solid #C4A882", borderRadius:"6px", padding:"5px 12px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation", whiteSpace:"nowrap", display:"inline-flex", alignItems:"center", gap:"7px" }}>
+                        <span style={{ display:"inline-block", transform:"rotate(-45deg)", fontSize:"13px", lineHeight:1, color:"#C4A882" }}>▲</span>
+                        GET BLUEPRINT
+                        <span style={{ background:"#1C2B3A", color:"#C4A882", fontSize:"9px", fontWeight:700, padding:"1px 6px", borderRadius:"20px", letterSpacing:"0.05em" }}>PREMIUM</span>
+                        <span style={{ background:"#C4A882", color:"#1C2B3A", fontSize:"9px", fontWeight:700, padding:"1px 6px", borderRadius:"20px", letterSpacing:"0.05em" }}>$1.99</span>
+                      </button>
+                    );
+                  })()}
+                  {/* Admin-only Instagram post button */}
+                  {isAdmin && (() => {
+                    const handleGenPost = () => {
+                      const rests = (trip.restaurants || []).slice(0,3).map(r => r.item).filter(Boolean);
+                      const quote = (trip.loves || "").slice(0, 160);
+                      const params = new URLSearchParams({
+                        dest: trip.destination || "",
+                        duration: `${trip.duration || ""}${trip.travelers ? " · " + trip.travelers : ""}`,
+                        quote,
+                        photo: trip.image || "",
+                        r1: rests[0] || "",
+                        r2: rests[1] || "",
+                        r3: rests[2] || "",
+                      });
+                      window.open(`/instagram-template.html?${params.toString()}`, "_blank");
+                    };
+                    return (
+                      <button onClick={handleGenPost} onTouchEnd={e=>{e.preventDefault();handleGenPost();}} style={{ background:"rgba(193,105,42,0.3)", border:"1px solid rgba(193,105,42,0.6)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation", whiteSpace:"nowrap" }}>📸 Post</button>
+                    );
+                  })()}
                 </div>
             </div>
             <div style={{ marginTop:"12px", display:"flex", gap:"10px", flexWrap:"wrap", alignItems:"center", position:"relative", zIndex:1 }}>
@@ -3531,6 +3576,230 @@ function GearPage({ onClose }) {
 }
 
 
+// ── Blueprint Page ─────────────────────────────────────────────────────────────
+function BlueprintPage({ tripId, onClose }) {
+  const [trip, setTrip] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [aiAlternatives, setAiAlternatives] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const success = new URLSearchParams(window.location.search).get("success") === "true";
+
+  useEffect(() => {
+    supabase.from("trips").select("*").eq("id", tripId).maybeSingle().then(({ data }) => {
+      if (data) {
+        setTrip({
+          id: data.id, title: data.title, destination: data.destination, region: data.region,
+          author: data.author_name, date: data.date, duration: data.duration, travelers: data.travelers,
+          tags: data.tags || [], loves: data.loves, doNext: data.do_next,
+          airfare: data.airfare || [], hotels: data.hotels || [], restaurants: data.restaurants || [],
+          bars: data.bars || [], activities: data.activities || [], days: data.days || [],
+          image: data.image ?? null, focalPoint: data.focal_point || {x:50,y:50}, gallery: data.gallery || []
+        });
+      }
+      setLoading(false);
+    });
+  }, [tripId]);
+
+  useEffect(() => {
+    if (!trip || aiAlternatives) return;
+    setAiLoading(true);
+    const prompt = `You are a travel expert. Given this trip to ${trip.destination}, suggest 1-2 alternative venues for each category below. Be specific and name real places. Return ONLY a JSON object with keys: hotels, restaurants, bars, activities. Each value is an array of {name, reason} objects.\n\nHotels: ${trip.hotels.map(h=>h.item).join(", ")}\nRestaurants: ${trip.restaurants.map(r=>r.item).join(", ")}\nBars: ${trip.bars.map(b=>b.item).join(", ")}\nActivities: ${trip.activities.map(a=>a.item).join(", ")}`;
+    fetch("/api/gemini", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+    }).then(r => r.json()).then(data => {
+      try {
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const clean = text.replace(/```json|```/g, "").trim();
+        setAiAlternatives(JSON.parse(clean));
+      } catch { setAiAlternatives(null); }
+    }).catch(() => setAiAlternatives(null)).finally(() => setAiLoading(false));
+  }, [trip]);
+
+  const generateKML = () => {
+    if (!trip) return;
+    const cats = [
+      { key: "hotels", color: "ff0000ff", icon: "lodging" },
+      { key: "restaurants", color: "ff00ff00", icon: "restaurant" },
+      { key: "bars", color: "ffff00ff", icon: "bar" },
+      { key: "activities", color: "ffffff00", icon: "camera" },
+    ];
+    const placemarks = cats.flatMap(cat =>
+      (trip[cat.key] || []).filter(p => p.item).map(p => `
+    <Placemark>
+      <n>${p.item}</n>
+      <description>${p.detail || ""} ${p.tip ? "| Tip: " + p.tip : ""}</description>
+      <StyleMap><Pair><key>normal</key><Style><IconStyle><color>${cat.color}</color></IconStyle></Style></Pair></StyleMap>
+    </Placemark>`).join("")
+    );
+    const kml = `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <n>${trip.title}</n>
+    <description>Trip Blueprint from TripCopycat — tripcopycat.com/trip/${trip.id}</description>
+    ${placemarks}
+  </Document>
+</kml>`;
+    const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${trip.title.replace(/\s+/g,"-")}-blueprint.kml`;
+    a.click();
+  };
+
+  if (loading) return (
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:C.seafoam }}>
+      <div style={{ textAlign:"center" }}><div style={{ fontSize:"32px", marginBottom:"12px" }}>🐾</div><div style={{ fontSize:"14px", color:C.muted }}>Loading your Blueprint…</div></div>
+    </div>
+  );
+
+  if (!trip) return (
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:C.seafoam }}>
+      <div style={{ textAlign:"center" }}><div style={{ fontSize:"32px", marginBottom:"12px" }}>✈️</div><div style={{ fontSize:"14px", color:C.muted }}>Trip not found.</div><button onClick={onClose} style={{ marginTop:"16px", padding:"8px 20px", borderRadius:"8px", border:"none", background:C.cta, color:C.white, cursor:"pointer", fontWeight:600 }}>← Back</button></div>
+    </div>
+  );
+
+  const catConfig = { hotels:"🏨", restaurants:"🍽", bars:"🍸", activities:"🎯" };
+
+  return (
+    <div style={{ minHeight:"100vh", background:C.seafoam, fontFamily:"'Playfair Display',Georgia,serif" }}>
+      {/* Success banner */}
+      {success && (
+        <div style={{ background:"linear-gradient(135deg,#1C4A2E,#2D7A4F)", padding:"14px 24px", textAlign:"center", color:"#fff", fontSize:"13px", fontWeight:600 }}>
+          🎉 Payment confirmed! Your Trip Blueprint is ready.
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{ position:"relative", minHeight:"320px", background:C.slate, overflow:"hidden" }}>
+        {trip.image && <img src={trip.image} alt={trip.title} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", objectPosition:`${trip.focalPoint?.x||50}% ${trip.focalPoint?.y||50}%`, opacity:0.3 }} />}
+        <div style={{ position:"absolute", inset:0, background:"linear-gradient(to bottom, rgba(28,43,58,0.2), rgba(28,43,58,0.9))" }} />
+        <div style={{ position:"relative", zIndex:1, padding:"40px 40px 32px", maxWidth:"800px", margin:"0 auto" }}>
+          <button onClick={onClose} style={{ background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.2)", color:"#fff", borderRadius:"8px", padding:"6px 14px", cursor:"pointer", fontSize:"12px", marginBottom:"24px", fontFamily:"'DM Sans',sans-serif" }}>← Back to TripCopycat</button>
+          <div style={{ fontSize:"11px", fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:"10px" }}>{trip.region} · {trip.duration} · {trip.date}</div>
+          <h1 style={{ fontSize:"38px", fontWeight:900, color:"#fff", margin:"0 0 8px", textShadow:"0 2px 12px rgba(0,0,0,0.5)", lineHeight:1.1 }}>{trip.title}</h1>
+          <div style={{ fontSize:"15px", color:"rgba(255,255,255,0.85)", marginBottom:"6px" }}>{trip.destination}</div>
+          <div style={{ fontSize:"13px", color:C.amber }}>by {trip.author} · {trip.travelers}</div>
+
+          {/* Action buttons */}
+          <div style={{ display:"flex", gap:"10px", marginTop:"24px", flexWrap:"wrap", fontFamily:"'DM Sans',sans-serif" }}>
+            <button onClick={() => window.print()} style={{ padding:"10px 20px", borderRadius:"8px", border:"none", background:C.amber, color:C.slate, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>⬇ Download PDF</button>
+            <button onClick={generateKML} style={{ padding:"10px 20px", borderRadius:"8px", border:"1px solid rgba(196,168,130,0.5)", background:"transparent", color:C.amber, fontSize:"12px", fontWeight:700, cursor:"pointer" }}>🗺 Open in Google Maps</button>
+            <button onClick={() => { navigator.clipboard.writeText(window.location.href); alert("Link copied!"); }} style={{ padding:"10px 20px", borderRadius:"8px", border:"1px solid rgba(255,255,255,0.2)", background:"transparent", color:"rgba(255,255,255,0.8)", fontSize:"12px", fontWeight:700, cursor:"pointer" }}>🔗 Share Blueprint</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div style={{ maxWidth:"800px", margin:"0 auto", padding:"32px 24px" }}>
+
+        {/* Loves */}
+        <div style={{ background:C.white, borderRadius:"16px", padding:"24px 28px", marginBottom:"20px", border:`1px solid ${C.tide}`, boxShadow:`0 2px 12px rgba(28,43,58,0.06)` }}>
+          <div style={{ fontSize:"11px", fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"10px" }}>❤️ What the traveler loved</div>
+          <p style={{ fontSize:"15px", color:C.slate, lineHeight:1.75, fontFamily:"'DM Sans',sans-serif", margin:0 }}>{trip.loves}</p>
+        </div>
+
+        {/* Do Next */}
+        {trip.doNext && (
+          <div style={{ background:C.white, borderRadius:"16px", padding:"24px 28px", marginBottom:"20px", border:`1px solid ${C.tide}`, boxShadow:`0 2px 12px rgba(28,43,58,0.06)` }}>
+            <div style={{ fontSize:"11px", fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"10px" }}>🔄 What they'd do differently</div>
+            <p style={{ fontSize:"15px", color:C.slate, lineHeight:1.75, fontFamily:"'DM Sans',sans-serif", margin:0 }}>{trip.doNext}</p>
+          </div>
+        )}
+
+        {/* Day-by-day timeline */}
+        {trip.days?.length > 0 && (
+          <div style={{ background:C.white, borderRadius:"16px", padding:"24px 28px", marginBottom:"20px", border:`1px solid ${C.tide}`, boxShadow:`0 2px 12px rgba(28,43,58,0.06)` }}>
+            <div style={{ fontSize:"11px", fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"20px" }}>📅 Day-by-Day Itinerary</div>
+            {trip.days.map((day, di) => (
+              <div key={di} style={{ marginBottom:"24px" }}>
+                <div style={{ fontSize:"14px", fontWeight:800, color:C.slate, marginBottom:"12px", paddingBottom:"8px", borderBottom:`2px solid ${C.tide}` }}>Day {day.day}{day.title ? ` — ${day.title}` : ""}{day.date ? ` · ${day.date}` : ""}</div>
+                <div style={{ position:"relative", paddingLeft:"20px" }}>
+                  <div style={{ position:"absolute", left:"6px", top:0, bottom:0, width:"2px", background:C.tide }} />
+                  {(day.items || []).map((item, ii) => (
+                    <div key={ii} style={{ position:"relative", marginBottom:"12px", fontFamily:"'DM Sans',sans-serif" }}>
+                      <div style={{ position:"absolute", left:"-17px", top:"4px", width:"10px", height:"10px", borderRadius:"50%", background:C.amber, border:`2px solid ${C.white}` }} />
+                      {item.time && <div style={{ fontSize:"10px", fontWeight:700, color:C.muted, marginBottom:"2px" }}>{item.time}</div>}
+                      <div style={{ fontSize:"13px", fontWeight:600, color:C.slate }}>{item.label}</div>
+                      {item.note && <div style={{ fontSize:"12px", color:C.slateLight, marginTop:"2px" }}>{item.note}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Venue details */}
+        {["hotels","restaurants","bars","activities"].map(cat => (
+          trip[cat]?.length > 0 && trip[cat].some(i => i.item) && (
+            <div key={cat} style={{ background:C.white, borderRadius:"16px", padding:"24px 28px", marginBottom:"20px", border:`1px solid ${C.tide}`, boxShadow:`0 2px 12px rgba(28,43,58,0.06)` }}>
+              <div style={{ fontSize:"11px", fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"14px" }}>{catConfig[cat]} {cat.charAt(0).toUpperCase()+cat.slice(1)}</div>
+              {trip[cat].filter(i => i.item).map((item, idx) => (
+                <div key={idx} style={{ padding:"10px 0", borderBottom:`1px solid ${C.seafoam}`, fontFamily:"'DM Sans',sans-serif" }}>
+                  <div style={{ fontSize:"13px", fontWeight:700, color:C.slate }}>{item.item}</div>
+                  {item.detail && <div style={{ fontSize:"12px", color:C.slateLight, marginTop:"2px" }}>{item.detail}</div>}
+                  {item.tip && <div style={{ fontSize:"12px", color:C.amber, marginTop:"4px" }}>💡 {item.tip}</div>}
+                </div>
+              ))}
+            </div>
+          )
+        ))}
+
+        {/* AI Alternatives */}
+        <div style={{ background:C.white, borderRadius:"16px", padding:"24px 28px", marginBottom:"20px", border:`1px solid ${C.tide}`, boxShadow:`0 2px 12px rgba(28,43,58,0.06)` }}>
+          <div style={{ fontSize:"11px", fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"14px" }}>✨ AI-Suggested Alternatives</div>
+          {aiLoading && <div style={{ fontSize:"13px", color:C.muted, fontFamily:"'DM Sans',sans-serif" }}>Generating alternatives…</div>}
+          {aiAlternatives && Object.entries(aiAlternatives).map(([cat, alts]) => (
+            alts?.length > 0 && (
+              <div key={cat} style={{ marginBottom:"14px" }}>
+                <div style={{ fontSize:"12px", fontWeight:700, color:C.slate, marginBottom:"6px", fontFamily:"'DM Sans',sans-serif" }}>{catConfig[cat]} Alternative {cat}</div>
+                {alts.map((a, i) => (
+                  <div key={i} style={{ padding:"8px 12px", background:C.seafoam, borderRadius:"8px", marginBottom:"6px", fontFamily:"'DM Sans',sans-serif" }}>
+                    <div style={{ fontSize:"13px", fontWeight:600, color:C.slate }}>{a.name}</div>
+                    {a.reason && <div style={{ fontSize:"12px", color:C.slateLight, marginTop:"2px" }}>{a.reason}</div>}
+                  </div>
+                ))}
+              </div>
+            )
+          ))}
+        </div>
+
+        {/* Map embed */}
+        <div style={{ background:C.white, borderRadius:"16px", padding:"24px 28px", marginBottom:"20px", border:`1px solid ${C.tide}`, boxShadow:`0 2px 12px rgba(28,43,58,0.06)` }}>
+          <div style={{ fontSize:"11px", fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"14px" }}>🗺 Map</div>
+          <iframe
+            title="Trip Map"
+            width="100%" height="300"
+            style={{ border:0, borderRadius:"8px" }}
+            loading="lazy"
+            src={`https://www.google.com/maps/embed/v1/search?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY || ""}&q=${encodeURIComponent(trip.destination)}`}
+          />
+          <div style={{ marginTop:"12px" }}>
+            <button onClick={generateKML} style={{ padding:"8px 16px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.seafoam, color:C.slate, fontSize:"12px", fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>⬇ Download KML — Open All Pins in Google Maps</button>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ textAlign:"center", padding:"24px 0", fontFamily:"'DM Sans',sans-serif" }}>
+          <div style={{ fontSize:"12px", color:C.muted, marginBottom:"8px" }}>Generated by TripCopycat · tripcopycat.com</div>
+          <div style={{ fontSize:"11px", color:C.muted }}>Views and recommendations are those of the traveler and not of TripCopycat.</div>
+        </div>
+      </div>
+
+      {/* Print styles */}
+      <style>{`
+        @media print {
+          button { display: none !important; }
+          body { background: white !important; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+
 // ── App ───────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -3542,6 +3811,13 @@ export default function App() {
       return cached ? JSON.parse(cached) : [];
     } catch { return []; }
   });
+
+  // Blueprint route detection
+  const blueprintMatch = window.location.pathname.match(/^\/blueprint\/(.+)/);
+  const blueprintId = blueprintMatch ? blueprintMatch[1] : null;
+  if (blueprintId) {
+    return <BlueprintPage tripId={blueprintId} onClose={() => { window.history.pushState(null, "", "/"); window.location.reload(); }} />;
+  }
   const [tripsLoading, setTripsLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -4069,7 +4345,7 @@ export default function App() {
       )}
 
       {showGear     && <GearPage onClose={() => { setShowGear(false); window.history.pushState(null, "", "/"); }} />}
-      {selected      && <TripModal trip={selected} onClose={closeTrip} allTrips={allTrips} isBookmarked={bookmarks.includes(selected.id)} onBookmark={toggleBookmark} />}
+      {selected      && <TripModal trip={selected} onClose={closeTrip} allTrips={allTrips} isBookmarked={bookmarks.includes(selected.id)} onBookmark={toggleBookmark} isAdmin={isAdmin} />}
       {showAdd       && <AddTripModal onClose={() => setShowAdd(false)} onAdd={t => setTrips(p=>[t,...p])} />}
       {showImport    && <SmartImportHub onClose={() => setShowImport(false)} onPhotoComplete={(data) => { setPhotoImportData(data); setShowImport(false); openSubmit(); }} />}
       {showSubmit    && <SubmitTripModal onClose={() => { setShowSubmit(false); setPhotoImportData(null); }} currentUser={currentUser} displayName={currentDisplayName} onSubmitSuccess={fetchTrips} prefillData={photoImportData} />}
