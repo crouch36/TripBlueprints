@@ -995,12 +995,12 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark, isAdmin 
                 <div style={{ marginTop:"4px", fontSize:"14px", color:"rgba(255,255,255,0.95)", fontWeight:500, textShadow:"0 1px 4px rgba(0,0,0,0.5)" }}>{trip.destination}</div>
               </div>
               <div style={{ display:"flex", gap:"5px", flexWrap:"wrap", justifyContent:"flex-end", alignSelf:"flex-start" }}>
-                  <button onClick={handleShare} onTouchEnd={e=>{e.preventDefault();handleShare();}} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation", whiteSpace:"nowrap" }}>{shareCopied ? "✓" : "🔗"}</button>
-                  <button onClick={handleTwitterShare} onTouchEnd={e=>{e.preventDefault();handleTwitterShare();}} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation" }}>𝕏</button>
-                  <button onClick={() => onBookmark && onBookmark(trip.id)} onTouchEnd={e=>{e.preventDefault(); onBookmark && onBookmark(trip.id);}} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation" }}>{isBookmarked ? "🔖" : "🏷️"}</button>
-                  <button onClick={() => setShowExport(true)} onTouchEnd={e=>{e.preventDefault();setShowExport(true);}} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation" }}>📤</button>
-                  {/* Blueprint purchase button */}
-                  {(() => {
+                  <button title="Copy link to this trip" onClick={handleShare} onTouchEnd={e=>{e.preventDefault();handleShare();}} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation", whiteSpace:"nowrap" }}>{shareCopied ? "✓" : "🔗"}</button>
+                  <button title="Share on X (Twitter)" onClick={handleTwitterShare} onTouchEnd={e=>{e.preventDefault();handleTwitterShare();}} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation" }}>𝕏</button>
+                  <button title={isBookmarked ? "Remove bookmark" : "Bookmark this trip"} onClick={() => onBookmark && onBookmark(trip.id)} onTouchEnd={e=>{e.preventDefault(); onBookmark && onBookmark(trip.id);}} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation" }}>{isBookmarked ? "🔖" : "🏷️"}</button>
+                  <button title="Export itinerary as plain text" onClick={() => setShowExport(true)} onTouchEnd={e=>{e.preventDefault();setShowExport(true);}} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation" }}>📤</button>
+                  {/* Blueprint purchase button — admin only until launch */}
+                  {isAdmin && (() => {
                     const handleBlueprint = async () => {
                       try {
                         const res = await fetch("/api/create-checkout", {
@@ -1016,7 +1016,7 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark, isAdmin 
                       }
                     };
                     return (
-                      <button onClick={handleBlueprint} onTouchEnd={e=>{e.preventDefault();handleBlueprint();}} style={{ background:"#FAF7F2", color:"#1C2B3A", border:"2px solid #C4A882", borderRadius:"6px", padding:"5px 12px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation", whiteSpace:"nowrap", display:"inline-flex", alignItems:"center", gap:"7px" }}>
+                      <button title="Get a premium PDF export with AI suggestions, Google Maps pins & shareable link" onClick={handleBlueprint} onTouchEnd={e=>{e.preventDefault();handleBlueprint();}} style={{ background:"#FAF7F2", color:"#1C2B3A", border:"2px solid #C4A882", borderRadius:"6px", padding:"5px 12px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation", whiteSpace:"nowrap", display:"inline-flex", alignItems:"center", gap:"7px" }}>
                         <span style={{ display:"inline-block", transform:"rotate(-45deg)", fontSize:"13px", lineHeight:1, color:"#C4A882" }}>▲</span>
                         GET BLUEPRINT
                         <span style={{ background:"#1C2B3A", color:"#C4A882", fontSize:"9px", fontWeight:700, padding:"1px 6px", borderRadius:"20px", letterSpacing:"0.05em" }}>PREMIUM</span>
@@ -1041,7 +1041,7 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark, isAdmin 
                       window.open(`/instagram-template.html?${params.toString()}`, "_blank");
                     };
                     return (
-                      <button onClick={handleGenPost} onTouchEnd={e=>{e.preventDefault();handleGenPost();}} style={{ background:"rgba(193,105,42,0.3)", border:"1px solid rgba(193,105,42,0.6)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation", whiteSpace:"nowrap" }}>📸 Post</button>
+                      <button title="Generate Instagram post for this trip" onClick={handleGenPost} onTouchEnd={e=>{e.preventDefault();handleGenPost();}} style={{ background:"rgba(193,105,42,0.3)", border:"1px solid rgba(193,105,42,0.6)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation", whiteSpace:"nowrap" }}>📸 Post</button>
                     );
                   })()}
                 </div>
@@ -1121,37 +1121,6 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark, isAdmin 
                 <button onClick={() => setView("daily")} style={{ width:"100%", padding:"12px", background:C.cta, color:C.white, border:"none", borderRadius:"10px", fontSize:"13px", fontWeight:700, cursor:"pointer" }}>
                   📅 View Day-by-Day Itinerary →
                 </button>
-
-                {/* Blueprint CTA banner */}
-                {(() => {
-                  const handleBlueprint = async () => {
-                    try {
-                      const res = await fetch("/api/create-checkout", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ tripId: trip.id, tripTitle: trip.title }),
-                      });
-                      const { url, error } = await res.json();
-                      if (error) { alert("Could not start checkout: " + error); return; }
-                      window.location.href = url;
-                    } catch (e) {
-                      alert("Checkout failed. Please try again.");
-                    }
-                  };
-                  return (
-                    <div style={{ marginTop:"14px", background:C.slate, backgroundImage:"radial-gradient(rgba(196,168,130,0.1) 1px,transparent 1px)", backgroundSize:"10px 10px", borderRadius:"12px", padding:"16px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px", flexWrap:"wrap" }}>
-                      <div>
-                        <div style={{ fontSize:"13px", fontWeight:800, color:"#FAF7F2", fontFamily:"'Playfair Display',Georgia,serif", marginBottom:"4px" }}>Get the Full Trip Blueprint</div>
-                        <div style={{ fontSize:"11px", color:"rgba(196,168,130,0.85)", lineHeight:1.5 }}>AI alternatives · Day-by-day PDF · Google Maps pins · Shareable link</div>
-                      </div>
-                      <button onClick={handleBlueprint} style={{ background:"#FAF7F2", color:"#1C2B3A", border:"2px solid #C4A882", borderRadius:"6px", padding:"8px 16px", cursor:"pointer", fontSize:"12px", fontWeight:700, whiteSpace:"nowrap", display:"inline-flex", alignItems:"center", gap:"7px", flexShrink:0 }}>
-                        <span style={{ display:"inline-block", transform:"rotate(-45deg)", fontSize:"13px", lineHeight:1, color:"#C4A882" }}>▲</span>
-                        GET BLUEPRINT
-                        <span style={{ background:"#C4A882", color:"#1C2B3A", fontSize:"9px", fontWeight:700, padding:"1px 6px", borderRadius:"20px" }}>$1.99</span>
-                      </button>
-                    </div>
-                  );
-                })()}
               </div>
             </div>
           )}
