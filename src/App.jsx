@@ -3945,7 +3945,7 @@ export default function App() {
           {isMobile ? (
             <div onClick={() => { setShowGear(true); window.history.pushState(null, "", "/gear"); }} style={{ background:C.slate, borderRadius:"10px", padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"16px", cursor:"pointer", border:`1px solid rgba(196,168,130,0.2)` }}>
               <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 2a3 3 0 0 1 6 0v2h-6V2z" fill="#C1692A"/><rect x="4" y="6" width="16" height="15" rx="3" fill="#C1692A"/><rect x="7" y="9" width="10" height="5" rx="1.5" fill="#A8501E"/><path d="M4 13H2.5a1.5 1.5 0 0 1 0-3H4" fill="#C1692A"/><path d="M20 13h1.5a1.5 1.5 0 0 0 0-3H20" fill="#C1692A"/></svg>
+                <img src="/backpack-icon.png" alt="" style={{ width:"22px", height:"22px", objectFit:"contain" }} />
                 <div>
                   <div style={{ fontSize:"13px", fontWeight:700, color:"#FAF7F2", fontFamily:"'Playfair Display',Georgia,serif" }}>Gear We Love</div>
                   <div style={{ fontSize:"10px", color:"rgba(196,168,130,0.8)" }}>Tested travel essentials from real trips</div>
@@ -3956,7 +3956,7 @@ export default function App() {
           ) : (
             <div onClick={() => { setShowGear(true); window.history.pushState(null, "", "/gear"); }} style={{ background:C.slate, backgroundImage:"radial-gradient(rgba(196,168,130,0.12) 1px,transparent 1px)", backgroundSize:"12px 12px", borderRadius:"12px", padding:"20px 24px", display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"20px", cursor:"pointer", border:`1px solid rgba(196,168,130,0.2)` }}>
               <div style={{ display:"flex", alignItems:"center", gap:"18px" }}>
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 2a3 3 0 0 1 6 0v2h-6V2z" fill="#C1692A"/><rect x="4" y="6" width="16" height="15" rx="3" fill="#C1692A"/><rect x="7" y="9" width="10" height="5" rx="1.5" fill="#A8501E"/><path d="M4 13H2.5a1.5 1.5 0 0 1 0-3H4" fill="#C1692A"/><path d="M20 13h1.5a1.5 1.5 0 0 0 0-3H20" fill="#C1692A"/></svg>
+                <img src="/backpack-icon.png" alt="" style={{ width:"40px", height:"40px", objectFit:"contain" }} />
                 <div>
                   <div style={{ fontSize:"16px", fontWeight:800, color:"#FAF7F2", fontFamily:"'Playfair Display',Georgia,serif", marginBottom:"4px" }}>Gear We Love</div>
                   <div style={{ fontSize:"12px", color:"rgba(196,168,130,0.85)" }}>Handpicked travel essentials from real family trips — personally tested.</div>
