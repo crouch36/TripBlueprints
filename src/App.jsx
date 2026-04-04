@@ -3544,11 +3544,39 @@ const SAMPLE_AI_ALTERNATIVES = {
   activities:[{name:"Path of the Gods hike",reason:"Stunning clifftop trail with panoramic coast views"},{name:"Private boat tour",reason:"Charter a small boat to reach hidden coves and grottos"}],
 };
 
-function SampleBlueprintPage({ onClose, setShowGear }) {
+function SampleBlueprintPage({ onClose }) {
   const [kmlLoading, setKmlLoading] = useState(false);
+  const [mapUrl, setMapUrl] = useState("");
   const trip = SAMPLE_TRIP;
+  const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_KEY || "";
 
-  const generateKML = async () => {
+  // Geocode venues and build Static Maps image with pins on mount
+  useEffect(() => {
+    if (!mapsKey) return;
+    const geocode = async (name) => {
+      try {
+        const q = encodeURIComponent(name + " Amalfi Coast Italy");
+        const res = await fetch("https://photon.komoot.io/api/?q=" + q + "&limit=1");
+        const data = await res.json();
+        const c = data?.features?.[0]?.geometry?.coordinates;
+        if (c) return { lat: c[1], lon: c[0] };
+      } catch {}
+      return null;
+    };
+    (async () => {
+      const colorMap = { hotels:"red", restaurants:"blue", bars:"purple", activities:"green" };
+      const markers = [];
+      for (const [cat, color] of Object.entries(colorMap)) {
+        for (const v of (trip[cat]||[]).filter(x=>x.item).slice(0,3)) {
+          const c = await geocode(v.item);
+          if (c) markers.push("markers=color:" + color + "%7C" + c.lat + "," + c.lon);
+        }
+      }
+      if (markers.length > 0) {
+        setMapUrl("https://maps.googleapis.com/maps/api/staticmap?size=760x380&maptype=roadmap&" + markers.join("&") + "&key=" + mapsKey);
+      }
+    })();
+  }, [mapsKey]); = async () => {
     setKmlLoading(true);
     const cats = [{key:"hotels",color:"ff0000ff",label:"Hotels"},{key:"restaurants",color:"ff00ff00",label:"Restaurants"},{key:"bars",color:"ffff00ff",label:"Bars"},{key:"activities",color:"ffffff00",label:"Activities"}];
     const geocode = async (name) => {
@@ -3566,10 +3594,10 @@ function SampleBlueprintPage({ onClose, setShowGear }) {
       for (const p of (trip[cat.key]||[]).filter(v=>v.item)) {
         const coords = await geocode(p.item);
         const pt = coords ? "<Point><coordinates>" + coords.lon + "," + coords.lat + ",0</coordinates></Point>" : "";
-        parts.push("<Placemark><n>" + p.item + "</n><description>" + cat.label + (p.detail?" — "+p.detail:"") + (p.tip?" | Tip: "+p.tip:"") + "</description><Style><IconStyle><color>" + cat.color + "</color></IconStyle></Style>" + pt + "</Placemark>");
+        parts.push("<Placemark><name>" + p.item + "</name><description>" + cat.label + (p.detail?" — "+p.detail:"") + (p.tip?" | Tip: "+p.tip:"") + "</description><Style><IconStyle><color>" + cat.color + "</color></IconStyle></Style>" + pt + "</Placemark>");
       }
     }
-    const kml = '<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><n>' + trip.title + '</n>' + parts.join("") + '</Document></kml>';
+    const kml = '<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + trip.title + '</name>' + parts.join("") + '</Document></kml>';
     const blob = new Blob([kml], {type:"application/vnd.google-earth.kml+xml"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -3577,8 +3605,6 @@ function SampleBlueprintPage({ onClose, setShowGear }) {
     a.click();
     setKmlLoading(false);
   };
-
-  const mapsKey = typeof window !== "undefined" && window.__mapsKey ? window.__mapsKey : "";
 
   return (
     <div style={{position:"fixed",inset:0,background:C.seafoam,fontFamily:"'DM Sans',sans-serif",zIndex:2000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
@@ -3664,9 +3690,15 @@ function SampleBlueprintPage({ onClose, setShowGear }) {
         </div>
         {/* Map */}
         <div style={{background:C.white,borderRadius:"16px",padding:"24px 28px",marginBottom:"20px",border:`1px solid ${C.tide}`}}>
-          <div style={{fontSize:"11px",fontWeight:700,color:C.amber,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:"14px"}}>🗺 Map</div>
-          <iframe title="Amalfi Coast Map" width="100%" height="300" style={{border:0,borderRadius:"8px"}} loading="lazy"
-            src={`https://www.google.com/maps/embed/v1/search?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY||""}&q=Positano,Amalfi+Coast,Italy`}/>
+          <div style={{fontSize:"11px",fontWeight:700,color:C.amber,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:"14px"}}>🗺 Venue Map</div>
+          {mapUrl ? (
+            <img src={mapUrl} alt="Amalfi Coast venue pins" style={{width:"100%",borderRadius:"8px",display:"block"}} />
+          ) : (
+            <div style={{width:"100%",height:"200px",background:C.seafoam,borderRadius:"8px",display:"flex",alignItems:"center",justifyContent:"center",color:C.muted,fontSize:"13px"}}>
+              {mapsKey ? "Loading venue pins…" : "Map unavailable"}
+            </div>
+          )}
+          <div style={{marginTop:"8px",fontSize:"11px",color:C.muted}}>🔴 Hotels &nbsp;·&nbsp; 🔵 Restaurants &nbsp;·&nbsp; 🟣 Bars &nbsp;·&nbsp; 🟢 Activities</div>
           <div style={{marginTop:"12px"}}>
             <button onClick={generateKML} disabled={kmlLoading} style={{padding:"8px 16px",borderRadius:"8px",border:`1px solid ${C.tide}`,background:C.seafoam,color:C.slate,fontSize:"12px",fontWeight:600,cursor:"pointer"}}>{kmlLoading?"Geocoding venues…":"⬇ Download KML — Open All Pins in Google Maps"}</button>
           </div>
@@ -3992,7 +4024,7 @@ export default function App() {
     } catch { return []; }
   });
 
-  const blueprintMatch = window.location.pathname.match(/^\/blueprint\/(.+)/);
+  const blueprintMatch = window.location.pathname.match(/^\/blueprint\/(?!sample)(.+)/);
   const blueprintId = blueprintMatch ? blueprintMatch[1] : null;
   if (blueprintId) {
     return <BlueprintPage tripId={blueprintId} onClose={() => { window.history.pushState(null, "", "/"); window.location.reload(); }} />;
