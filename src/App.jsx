@@ -3544,42 +3544,41 @@ const SAMPLE_AI_ALTERNATIVES = {
   activities:[{name:"Path of the Gods hike",reason:"Stunning clifftop trail with panoramic coast views"},{name:"Private boat tour",reason:"Charter a small boat to reach hidden coves and grottos"}],
 };
 
-function SampleBlueprintPage({ onClose, setShowGear }) {
+function SampleBlueprintPage({ onClose }) {
   const [kmlLoading, setKmlLoading] = useState(false);
   const [mapUrl, setMapUrl] = useState("");
   const trip = SAMPLE_TRIP;
   const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_KEY || "";
 
-  // Geocode venues and build Static Maps URL with pins on load
+  // Geocode all venues and build static map URL on mount
   useEffect(() => {
     if (!mapsKey) return;
     const geocode = async (name) => {
       try {
-        const q = encodeURIComponent(name + " " + trip.destination);
+        const q = encodeURIComponent(name + " Amalfi Coast Italy");
         const res = await fetch("https://photon.komoot.io/api/?q=" + q + "&limit=1");
         const data = await res.json();
         const coords = data?.features?.[0]?.geometry?.coordinates;
-        if (coords) return { lon: coords[0], lat: coords[1] };
+        if (coords) return { lat: coords[1], lon: coords[0] };
       } catch {}
       return null;
     };
-    const buildMap = async () => {
-      const colors = { hotels:"red", restaurants:"blue", bars:"purple", activities:"green" };
-      const markerGroups = [];
-      for (const [cat, color] of Object.entries(colors)) {
-        const venues = (trip[cat] || []).filter(v => v.item).slice(0, 3);
-        for (const v of venues) {
-          const coords = await geocode(v.item);
-          if (coords) markerGroups.push(`markers=color:${color}%7C${coords.lat},${coords.lon}`);
+    (async () => {
+      const colorMap = { hotels:"red", restaurants:"blue", bars:"purple", activities:"green" };
+      const markers = [];
+      for (const [cat, color] of Object.entries(colorMap)) {
+        for (const v of (trip[cat]||[]).filter(x=>x.item).slice(0,3)) {
+          const c = await geocode(v.item);
+          if (c) markers.push("markers=color:" + color + "%7Clabel:" + v.item[0].toUpperCase() + "%7C" + c.lat + "," + c.lon);
         }
       }
-      if (markerGroups.length > 0) {
-        const url = `https://maps.googleapis.com/maps/api/staticmap?size=800x400&maptype=roadmap&${markerGroups.join("&")}&key=${mapsKey}`;
-        setMapUrl(url);
+      if (markers.length > 0) {
+        setMapUrl("https://maps.googleapis.com/maps/api/staticmap?size=760x380&maptype=roadmap&" + markers.join("&") + "&key=" + mapsKey);
       }
-    };
-    buildMap();
+    })();
   }, [mapsKey]);
+
+  const generateKML = async () => {
     setKmlLoading(true);
     const cats = [{key:"hotels",color:"ff0000ff",label:"Hotels"},{key:"restaurants",color:"ff00ff00",label:"Restaurants"},{key:"bars",color:"ffff00ff",label:"Bars"},{key:"activities",color:"ffffff00",label:"Activities"}];
     const geocode = async (name) => {
@@ -3597,10 +3596,10 @@ function SampleBlueprintPage({ onClose, setShowGear }) {
       for (const p of (trip[cat.key]||[]).filter(v=>v.item)) {
         const coords = await geocode(p.item);
         const pt = coords ? "<Point><coordinates>" + coords.lon + "," + coords.lat + ",0</coordinates></Point>" : "";
-        parts.push("<Placemark><n>" + p.item + "</n><description>" + cat.label + (p.detail?" — "+p.detail:"") + (p.tip?" | Tip: "+p.tip:"") + "</description><Style><IconStyle><color>" + cat.color + "</color></IconStyle></Style>" + pt + "</Placemark>");
+        parts.push("<Placemark><name>" + p.item + "</name><description>" + cat.label + (p.detail?" — "+p.detail:"") + (p.tip?" | Tip: "+p.tip:"") + "</description><Style><IconStyle><color>" + cat.color + "</color></IconStyle></Style>" + pt + "</Placemark>");
       }
     }
-    const kml = '<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><n>' + trip.title + '</n>' + parts.join("") + '</Document></kml>';
+    const kml = '<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + trip.title + '</name>' + parts.join("") + '</Document></kml>';
     const blob = new Blob([kml], {type:"application/vnd.google-earth.kml+xml"});
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -3608,6 +3607,7 @@ function SampleBlueprintPage({ onClose, setShowGear }) {
     a.click();
     setKmlLoading(false);
   };
+
 
   return (
     <div style={{minHeight:"100vh",background:C.seafoam,fontFamily:"'DM Sans',sans-serif"}}>
@@ -3693,14 +3693,15 @@ function SampleBlueprintPage({ onClose, setShowGear }) {
         </div>
         {/* Map */}
         <div style={{background:C.white,borderRadius:"16px",padding:"24px 28px",marginBottom:"20px",border:`1px solid ${C.tide}`}}>
-          <div style={{fontSize:"11px",fontWeight:700,color:C.amber,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:"14px"}}>🗺 Map — Venue Pins</div>
+          <div style={{fontSize:"11px",fontWeight:700,color:C.amber,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:"14px"}}>🗺 Venue Map</div>
           {mapUrl ? (
-            <img src={mapUrl} alt="Trip venues map" style={{width:"100%",borderRadius:"8px",display:"block"}} />
+            <img src={mapUrl} alt="Amalfi Coast venues" style={{width:"100%",borderRadius:"8px",display:"block"}} />
           ) : (
-            <div style={{width:"100%",height:"300px",background:C.seafoam,borderRadius:"8px",display:"flex",alignItems:"center",justifyContent:"center",color:C.muted,fontSize:"13px"}}>
-              Loading map pins…
+            <div style={{width:"100%",height:"200px",background:C.seafoam,borderRadius:"8px",display:"flex",alignItems:"center",justifyContent:"center",color:C.muted,fontSize:"13px"}}>
+              {mapsKey ? "Loading venue pins…" : "Map unavailable"}
             </div>
           )}
+          <div style={{marginTop:"8px",fontSize:"11px",color:C.muted}}>🔴 Hotels &nbsp; 🔵 Restaurants &nbsp; 🟣 Bars &nbsp; 🟢 Activities</div>
           <div style={{marginTop:"12px"}}>
             <button onClick={generateKML} disabled={kmlLoading} style={{padding:"8px 16px",borderRadius:"8px",border:`1px solid ${C.tide}`,background:C.seafoam,color:C.slate,fontSize:"12px",fontWeight:600,cursor:"pointer"}}>{kmlLoading?"Geocoding venues…":"⬇ Download KML — Open All Pins in Google Maps"}</button>
           </div>
@@ -3841,7 +3842,7 @@ function BlueprintPage({ tripId, onClose }) {
     const placemarks = cats.flatMap(cat =>
       (trip[cat.key] || []).filter(p => p.item).map(p => `
     <Placemark>
-      <n>${p.item}</n>
+      <name>${p.item}</name>
       <description>${p.detail || ""} ${p.tip ? "| Tip: " + p.tip : ""}</description>
       <StyleMap><Pair><key>normal</key><Style><IconStyle><color>${cat.color}</color></IconStyle></Style></Pair></StyleMap>
     </Placemark>`).join("")
@@ -3849,7 +3850,7 @@ function BlueprintPage({ tripId, onClose }) {
     const kml = `<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <n>${trip.title}</n>
+    <name>${trip.title}</name>
     <description>Trip Blueprint from TripCopycat — tripcopycat.com/trip/${trip.id}</description>
     ${placemarks}
   </Document>
@@ -4018,12 +4019,8 @@ function BlueprintPage({ tripId, onClose }) {
 export default function App() {
   const [showGear, setShowGear] = useState(window.location.pathname === "/gear");
   const [showSampleBlueprint, setShowSampleBlueprint] = useState(window.location.pathname === "/blueprint/sample");
-
-  // Keep showSampleBlueprint in sync with URL
   useEffect(() => {
-    const handlePop = () => setShowSampleBlueprint(window.location.pathname === "/blueprint/sample");
-    window.addEventListener("popstate", handlePop);
-    return () => window.removeEventListener("popstate", handlePop);
+    if (window.location.pathname === "/blueprint/sample") setShowSampleBlueprint(true);
   }, []);
   const [trips, setTrips] = useState(SAMPLE_TRIPS);
   const [dbTrips, setDbTrips] = useState(() => {
