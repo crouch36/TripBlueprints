@@ -2146,7 +2146,7 @@ function AdminQueueModal({ onClose, onApprove }) {
 
   const approve = async (sub) => {
     const t = sub.trip_data;
-    await supabase.from("trips").insert([{
+    const { data: inserted } = await supabase.from("trips").insert([{
       title:t.title, destination:t.destination, region:t.region,
       author_name:sub.submitter_name, author_email:sub.submitter_email,
       date:t.date, duration:t.duration, travelers:t.travelers,
@@ -2154,7 +2154,16 @@ function AdminQueueModal({ onClose, onApprove }) {
       airfare:t.airfare||[], hotels:t.hotels||[], restaurants:t.restaurants||[],
       bars:t.bars||[], activities:t.activities||[], days:t.days||[],
       image:t.image??null, status:"published", user_id:sub.user_id||null, focal_point:t.focalPoint||{x:50,y:50}, gallery:t.gallery||[]
-    }]);
+    }]).select("id");
+    // Fire-and-forget geocoding — never blocks approval, errors are silent
+    const newTripId = inserted?.[0]?.id;
+    if (newTripId) {
+      fetch("/api/geocode-venues", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tripId: newTripId }),
+      }).catch(() => {});
+    }
     await supabase.from("submissions").update({ status:"approved", reviewed_at:new Date().toISOString() }).eq("id",sub.id);
     setSubmissions(p => p.map(s => s.id===sub.id ? {...s,status:"approved"} : s));
     if (onApprove) onApprove();
@@ -3594,12 +3603,66 @@ function BlueprintPage({ tripId, onClose }) {
           tags: data.tags || [], loves: data.loves, doNext: data.do_next,
           airfare: data.airfare || [], hotels: data.hotels || [], restaurants: data.restaurants || [],
           bars: data.bars || [], activities: data.activities || [], days: data.days || [],
-          image: data.image ?? null, focalPoint: data.focal_point || {x:50,y:50}, gallery: data.gallery || []
+          image: data.image ?? null, focalPoint: data.focal_point || {x:50,y:50}, gallery: data.gallery || [],
+          venueCoords: data.venue_coords || null,
         });
       }
       setLoading(false);
     });
   }, [tripId]);
+
+  // Load Google Maps JS API once and render pins when trip is ready
+  useEffect(() => {
+    if (!trip?.venueCoords) return;
+    const mapsKey = import.meta.env.VITE_GOOGLE_MAPS_KEY || "";
+    if (!mapsKey) return;
+
+    const renderMap = () => {
+      const mapEl = document.getElementById("bp-gmap");
+      if (!mapEl || !window.google) return;
+
+      const CAT_COLORS = { hotels:"#C1392B", restaurants:"#2980B9", bars:"#8E44AD", activities:"#27AE60" };
+      const pins = [];
+      for (const [cat, coords] of Object.entries(trip.venueCoords)) {
+        const venues = trip[cat] || [];
+        (coords || []).forEach((c, i) => {
+          if (c && venues[i]?.item) pins.push({ lat: c.lat, lng: c.lng, name: venues[i].item, cat, color: CAT_COLORS[cat] });
+        });
+      }
+      if (pins.length === 0) return;
+
+      const bounds = new window.google.maps.LatLngBounds();
+      const map = new window.google.maps.Map(mapEl, { zoom: 12, center: { lat: pins[0].lat, lng: pins[0].lng }, mapTypeControl: false, streetViewControl: false, fullscreenControl: true });
+      const infoWindow = new window.google.maps.InfoWindow();
+
+      const makeSvgIcon = (color) => {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36"><path d="M14 0C6.268 0 0 6.268 0 14c0 9.333 14 22 14 22S28 23.333 28 14C28 6.268 21.732 0 14 0z" fill="${color}"/><circle cx="14" cy="14" r="6" fill="white"/></svg>`;
+        return { url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg), scaledSize: new window.google.maps.Size(28, 36), anchor: new window.google.maps.Point(14, 36) };
+      };
+
+      for (const pin of pins) {
+        const marker = new window.google.maps.Marker({ position: { lat: pin.lat, lng: pin.lng }, map, icon: makeSvgIcon(pin.color), title: pin.name });
+        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pin.name + " " + (trip.destination || ""))}`;
+        marker.addListener("click", () => {
+          infoWindow.setContent(`<div style="font-family:'DM Sans',sans-serif;padding:2px 4px"><div style="font-weight:700;font-size:13px;margin-bottom:3px">${pin.name}</div><div style="font-size:11px;color:#A89080;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px">${pin.cat}</div><a href="${mapsUrl}" target="_blank" rel="noopener" style="font-size:12px;color:#4285F4;font-weight:600;text-decoration:none">Open in Google Maps ↗</a></div>`);
+          infoWindow.open(map, marker);
+        });
+        bounds.extend({ lat: pin.lat, lng: pin.lng });
+      }
+      map.fitBounds(bounds);
+      window.google.maps.event.addListenerOnce(map, "idle", () => { if (map.getZoom() > 15) map.setZoom(15); });
+    };
+
+    if (window.google?.maps) {
+      renderMap();
+    } else {
+      window._bpMapCallback = renderMap;
+      const s = document.createElement("script");
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${mapsKey}&callback=_bpMapCallback`;
+      s.async = true; s.defer = true;
+      document.head.appendChild(s);
+    }
+  }, [trip]);
 
   useEffect(() => {
     if (!trip || aiAlternatives) return;
@@ -3767,16 +3830,27 @@ function BlueprintPage({ tripId, onClose }) {
           ))}
         </div>
 
-        {/* Map embed */}
+        {/* Map with venue pins */}
         <div style={{ background:C.white, borderRadius:"16px", padding:"24px 28px", marginBottom:"20px", border:`1px solid ${C.tide}`, boxShadow:`0 2px 12px rgba(28,43,58,0.06)` }}>
-          <div style={{ fontSize:"11px", fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"14px" }}>🗺 Map</div>
-          <iframe
-            title="Trip Map"
-            width="100%" height="300"
-            style={{ border:0, borderRadius:"8px" }}
-            loading="lazy"
-            src={`https://www.google.com/maps/embed/v1/search?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY || ""}&q=${encodeURIComponent(trip.destination)}`}
-          />
+          <div style={{ fontSize:"11px", fontWeight:700, color:C.amber, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:"14px" }}>🗺 Venue Map</div>
+          {trip.venueCoords ? (
+            <div id="bp-gmap" style={{ width:"100%", height:"360px", borderRadius:"10px", border:`1px solid ${C.tide}` }} />
+          ) : (
+            <iframe
+              title="Trip Map"
+              width="100%" height="300"
+              style={{ border:0, borderRadius:"8px" }}
+              loading="lazy"
+              src={`https://www.google.com/maps/embed/v1/search?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY || ""}&q=${encodeURIComponent(trip.destination)}`}
+            />
+          )}
+          <div style={{ marginTop:"8px", fontSize:"11px", color:C.muted, display:"flex", gap:"12px", flexWrap:"wrap" }}>
+            {trip.venueCoords && (
+              <>
+                <span>🔴 Hotels</span><span>🔵 Restaurants</span><span>🟣 Bars</span><span>🟢 Activities</span>
+              </>
+            )}
+          </div>
           <div style={{ marginTop:"12px" }}>
             <button onClick={generateKML} style={{ padding:"8px 16px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.seafoam, color:C.slate, fontSize:"12px", fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>⬇ Download KML — Open All Pins in Google Maps</button>
           </div>
