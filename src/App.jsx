@@ -3581,7 +3581,7 @@ function SampleBlueprintPage({ onClose, setShowGear }) {
   const mapsKey = typeof window !== "undefined" && window.__mapsKey ? window.__mapsKey : "";
 
   return (
-    <div style={{minHeight:"100vh",background:C.seafoam,fontFamily:"'DM Sans',sans-serif"}}>
+    <div style={{position:"fixed",inset:0,background:C.seafoam,fontFamily:"'DM Sans',sans-serif",zIndex:2000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
       {/* Sample banner */}
       <div style={{background:"linear-gradient(135deg,#1D6A3A,#2D9A57)",padding:"10px 24px",textAlign:"center",color:"#fff",fontSize:"13px",fontWeight:600}}>
         ✦ Free sample Blueprint — <span style={{textDecoration:"underline",cursor:"pointer"}} onClick={onClose}>browse all trips on TripCopycat</span> and get your own for $1.99
@@ -3992,6 +3992,11 @@ export default function App() {
     } catch { return []; }
   });
 
+  const blueprintMatch = window.location.pathname.match(/^\/blueprint\/(.+)/);
+  const blueprintId = blueprintMatch ? blueprintMatch[1] : null;
+  if (blueprintId) {
+    return <BlueprintPage tripId={blueprintId} onClose={() => { window.history.pushState(null, "", "/"); window.location.reload(); }} />;
+  }
   const [tripsLoading, setTripsLoading] = useState(true);
   const [selected, setSelected] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -4163,19 +4168,6 @@ export default function App() {
   useEffect(() => { window.__setShowLegal = setShowLegal; }, []);
   const [editingTrip, setEditingTrip] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
-
-  // ── Route-based early returns — must be AFTER all hooks ──
-  if (showSampleBlueprint) {
-    return <SampleBlueprintPage onClose={() => { setShowSampleBlueprint(false); window.history.pushState(null, "", "/"); }} />;
-  }
-  if (showGear) {
-    return <GearPage onClose={() => { setShowGear(false); window.history.pushState(null, "", "/"); }} />;
-  }
-  const blueprintMatch = window.location.pathname.match(/^\/blueprint\/(.+)/);
-  const blueprintId = blueprintMatch ? blueprintMatch[1] : null;
-  if (blueprintId) {
-    return <BlueprintPage tripId={blueprintId} onClose={() => { window.history.pushState(null, "", "/"); window.location.reload(); }} />;
-  }
 
   const handleSaveTrip = async (updated) => {
     if (!isAdmin) {
@@ -4536,7 +4528,8 @@ export default function App() {
         </div>
       )}
 
-      {/* GearPage handled as early return above */}
+      {showGear     && <GearPage onClose={() => { setShowGear(false); window.history.pushState(null, "", "/"); }} />}
+      {showSampleBlueprint && <SampleBlueprintPage onClose={() => { setShowSampleBlueprint(false); window.history.pushState(null, "", "/"); }} />}
       {selected      && <TripModal trip={selected} onClose={closeTrip} allTrips={allTrips} isBookmarked={bookmarks.includes(selected.id)} onBookmark={toggleBookmark} isAdmin={isAdmin} />}
       {showAdd       && <AddTripModal onClose={() => setShowAdd(false)} onAdd={t => setTrips(p=>[t,...p])} />}
       {showImport    && <SmartImportHub onClose={() => setShowImport(false)} onPhotoComplete={(data) => { setPhotoImportData(data); setShowImport(false); openSubmit(); }} />}
