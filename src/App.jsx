@@ -2173,7 +2173,7 @@ function AdminQueueModal({ onClose, onApprove }) {
     if (newTripId) {
       fetch("/api/geocode-venues", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-geocode-secret": import.meta.env.VITE_GEOCODE_SECRET || "" },
         body: JSON.stringify({ tripId: newTripId }),
       }).catch(() => {});
     }
@@ -2203,7 +2203,7 @@ function AdminQueueModal({ onClose, onApprove }) {
       setRegeocodeStatus(`Geocoding ${done + 1}/${trips.length}: ${t.title}`);
       await fetch("/api/geocode-venues", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-geocode-secret": import.meta.env.VITE_GEOCODE_SECRET || "" },
         body: JSON.stringify({ tripId: t.id }),
       }).catch(() => {});
       done++;

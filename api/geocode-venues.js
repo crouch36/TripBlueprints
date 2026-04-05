@@ -2,16 +2,17 @@
 // Called server-side after a trip is approved.
 // Geocodes all venues using Google Geocoding API and writes
 // venue_coords (jsonb) back to the trips row in Supabase.
-// Fire-and-forget from the client — errors never surface to the admin.
+// Protected by GEOCODE_SECRET header — only internal app calls are accepted.
 
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY  // service role key — never exposed to client
+  process.env.SUPABASE_SERVICE_KEY
 );
 
-const MAPS_KEY = process.env.VITE_GOOGLE_MAPS_KEY || "";
+const MAPS_KEY = process.env.GOOGLE_GEOCODING_KEY || "";
+const GEOCODE_SECRET = process.env.GEOCODE_SECRET || "";
 
 async function geocodeVenue(name, destination) {
   if (!MAPS_KEY) return null;
@@ -31,10 +32,15 @@ async function geocodeVenue(name, destination) {
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
+  // Auth check — reject requests without the correct secret header
+  const secret = req.headers["x-geocode-secret"] || "";
+  if (GEOCODE_SECRET && secret !== GEOCODE_SECRET) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
   const { tripId } = req.body || {};
   if (!tripId) return res.status(400).json({ error: "tripId required" });
 
-  // Fetch the trip
   const { data: trip, error } = await supabase
     .from("trips")
     .select("destination, hotels, restaurants, bars, activities")
@@ -53,7 +59,7 @@ export default async function handler(req, res) {
     for (const v of venues) {
       if (!v.item) { resolved.push(null); continue; }
       const coords = await geocodeVenue(v.item, destination);
-      resolved.push(coords); // null if not found — map skips silently
+      resolved.push(coords);
     }
     venue_coords[cat] = resolved;
   }
