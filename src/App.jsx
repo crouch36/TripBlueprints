@@ -1027,7 +1027,7 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark, isAdmin 
                   })()}
                   {/* Admin-only Instagram post button */}
                   {isAdmin && (
-                    <button onClick={() => setShowBlueprintPreview(true)} style={{ background:"rgba(196,168,130,0.2)", border:"1px solid rgba(196,168,130,0.4)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation", whiteSpace:"nowrap" }}>🗺 Blueprint</button>
+                    <button onClick={e => { e.stopPropagation(); setShowBlueprintPreview(true); }} onTouchEnd={e=>{e.stopPropagation();e.preventDefault();setShowBlueprintPreview(true);}} style={{ background:"rgba(70,130,90,0.3)", border:"1px solid rgba(70,180,100,0.5)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation", whiteSpace:"nowrap" }}>🗺 Preview</button>
                   )}
                   {isAdmin && (() => {
                     const handleGenPost = () => {
@@ -1215,7 +1215,7 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark, isAdmin 
         </div>
       )}
       {showBlueprintPreview && (
-        <div style={{ position:"fixed", inset:0, zIndex:3000 }}>
+        <div style={{ position:"fixed", inset:0, zIndex:3000, overflowY:"auto" }}>
           <BlueprintPage tripId={trip.id} onClose={() => setShowBlueprintPreview(false)} />
           <div style={{ position:"fixed", top:"16px", right:"16px", zIndex:4000 }}>
             <button onClick={() => setShowBlueprintPreview(false)} style={{ background:"rgba(28,43,58,0.9)", border:"1px solid rgba(255,255,255,0.2)", color:"#fff", borderRadius:"8px", padding:"8px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer" }}>✕ Close Preview</button>
@@ -2190,6 +2190,27 @@ function AdminQueueModal({ onClose, onApprove }) {
   };
 
   const statusCol = { pending:C.amber, flagged:C.red, approved:C.green, rejected:C.muted };
+  const [regeocoding, setRegeocoding] = useState(false);
+  const [regeocodeStatus, setRegeocodeStatus] = useState("");
+
+  const regeocodeAll = async () => {
+    setRegeocoding(true);
+    setRegeocodeStatus("Fetching trips…");
+    const { data: trips } = await supabase.from("trips").select("id, title").eq("status", "published");
+    if (!trips?.length) { setRegeocodeStatus("No trips found."); setRegeocoding(false); return; }
+    let done = 0;
+    for (const t of trips) {
+      setRegeocodeStatus(`Geocoding ${done + 1}/${trips.length}: ${t.title}`);
+      await fetch("/api/geocode-venues", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tripId: t.id }),
+      }).catch(() => {});
+      done++;
+    }
+    setRegeocodeStatus(`Done — ${done} trips geocoded.`);
+    setRegeocoding(false);
+  };
 
   return (
     <div className="tc-modal-overlay" style={{ position:"fixed", inset:0, background:"rgba(44,62,80,0.75)", zIndex:4000, display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"28px 16px", overflowY:"auto", WebkitOverflowScrolling:"touch", backdropFilter:"blur(8px)" }}>
@@ -2198,8 +2219,12 @@ function AdminQueueModal({ onClose, onApprove }) {
           <div>
             <div style={{ fontSize:"17px", fontWeight:800, color:C.slate, fontFamily:"'Playfair Display',Georgia,serif" }}>Submission Queue</div>
             <div style={{ fontSize:"11px", color:C.slateLight, marginTop:"2px" }}>{submissions.filter(s=>s.status==="flagged"||s.status==="pending").length} awaiting review</div>
+            {regeocodeStatus && <div style={{ fontSize:"10px", color:C.amber, marginTop:"4px", fontWeight:600 }}>{regeocodeStatus}</div>}
           </div>
-          <button onClick={onClose} style={{ background:C.seafoamDeep, border:"none", color:C.slateLight, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>x</button>
+          <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
+            <button onClick={regeocodeAll} disabled={regeocoding} style={{ padding:"6px 12px", borderRadius:"7px", border:`1px solid ${C.amber}`, background:C.amberBg, color:C.amber, fontSize:"11px", fontWeight:700, cursor:regeocoding?"not-allowed":"pointer" }}>{regeocoding ? "Geocoding…" : "🗺 Regeocode All"}</button>
+            <button onClick={onClose} style={{ background:C.seafoamDeep, border:"none", color:C.slateLight, borderRadius:"50%", width:"34px", height:"34px", cursor:"pointer", fontSize:"17px" }}>x</button>
+          </div>
         </div>
         <div style={{ padding:"16px 22px", maxHeight:"70vh", overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
           {loading && <div style={{ textAlign:"center", padding:"40px", color:C.muted }}>Loading…</div>}
@@ -2272,7 +2297,7 @@ function AdminQueueModal({ onClose, onApprove }) {
         );
       })()}
       {previewTripId && (
-        <div style={{ position:"fixed", inset:0, zIndex:6000 }}>
+        <div style={{ position:"fixed", inset:0, zIndex:6000, overflowY:"auto" }}>
           <BlueprintPage tripId={previewTripId} onClose={() => setPreviewTripId(null)} />
           <div style={{ position:"fixed", top:"16px", right:"16px", zIndex:7000 }}>
             <button onClick={() => setPreviewTripId(null)} style={{ background:"rgba(28,43,58,0.9)", border:"1px solid rgba(255,255,255,0.2)", color:"#fff", borderRadius:"8px", padding:"8px 16px", fontSize:"12px", fontWeight:700, cursor:"pointer" }}>✕ Close Preview</button>
@@ -3707,30 +3732,31 @@ function BlueprintPage({ tripId, onClose }) {
     }).catch(() => setAiAlternatives(null)).finally(() => setAiLoading(false));
   }, [trip]);
 
+  const xmlEsc = (s) => String(s||"")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
   const generateKML = () => {
     if (!trip) return;
     const cats = [
-      { key: "hotels", color: "ff0000ff", icon: "lodging" },
-      { key: "restaurants", color: "ff00ff00", icon: "restaurant" },
-      { key: "bars", color: "ffff00ff", icon: "bar" },
-      { key: "activities", color: "ffffff00", icon: "camera" },
+      { key:"hotels",      color:"ff0000ff", label:"Hotel" },
+      { key:"restaurants", color:"ff00ff00", label:"Restaurant" },
+      { key:"bars",        color:"ffff00ff", label:"Bar" },
+      { key:"activities",  color:"ffffff00", label:"Activity" },
     ];
-    const placemarks = cats.flatMap(cat =>
-      (trip[cat.key] || []).filter(p => p.item).map(p => `
-    <Placemark>
-      <n>${p.item}</n>
-      <description>${p.detail || ""} ${p.tip ? "| Tip: " + p.tip : ""}</description>
-      <StyleMap><Pair><key>normal</key><Style><IconStyle><color>${cat.color}</color></IconStyle></Style></Pair></StyleMap>
-    </Placemark>`).join("")
-    );
-    const kml = `<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <n>${trip.title}</n>
-    <description>Trip Blueprint from TripCopycat — tripcopycat.com/trip/${trip.id}</description>
-    ${placemarks}
-  </Document>
-</kml>`;
+    const coords = trip.venueCoords || {};
+    const placemarks = cats.flatMap(cat => {
+      const venues = (trip[cat.key] || []).filter(p => p.item);
+      const catCoords = coords[cat.key] || [];
+      return venues.map((p, i) => {
+        const c = catCoords[i];
+        const pt = c?.lat && c?.lng
+          ? `<Point><coordinates>${c.lng},${c.lat},0</coordinates></Point>`
+          : "";
+        return `<Placemark><name>${xmlEsc(p.item)}</name><description>${xmlEsc(cat.label + (p.detail ? " — " + p.detail : "") + (p.tip ? " | Tip: " + p.tip : ""))}</description><Style><IconStyle><color>${cat.color}</color></IconStyle></Style>${pt}</Placemark>`;
+      });
+    });
+    const kml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${xmlEsc(trip.title)}</name><description>Trip Blueprint from TripCopycat — tripcopycat.com/trip/${trip.id}</description>${placemarks.join("")}</Document></kml>`;
     const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
