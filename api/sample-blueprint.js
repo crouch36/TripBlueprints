@@ -289,27 +289,27 @@ export default function handler(req, res) {
     destination: "Positano, Amalfi Coast, Italy",
     // lat/lng verified from street addresses — never use Photon for sample page
     hotels:      [
-      { item:"Hotel Miramare",                      detail:"Positano",    lat:40.6272, lng:14.4854 },
-      { item:"Hotel Santa Lucia",                   detail:"Naples",      lat:40.8349, lng:14.2470 },
+      { item:"Hotel Miramare",                      detail:"Positano",    lat:40.6275718, lng:14.4855026 },
+      { item:"Hotel Santa Lucia",                   detail:"Naples",      lat:40.8300198, lng:14.2491288 },
     ],
     restaurants: [
-      { item:"Posides Cafe",                        detail:"Positano",    lat:40.6284, lng:14.4850 },
-      { item:"Il Tridente",                         detail:"Positano",    lat:40.6286, lng:14.4836 },
-      { item:"Saraceno D Oro",                      detail:"Positano",    lat:40.6278, lng:14.4843 },
-      { item:"Villa Verde",                         detail:"Capri",       lat:40.5508, lng:14.2270 },
-      { item:"Casa Mele",                           detail:"Capri",       lat:40.5503, lng:14.2261 },
-      { item:"Al Ruotolo",                          detail:"Naples",      lat:40.8526, lng:14.2686 },
+      { item:"Posides Café",                        detail:"Positano",    lat:40.6284107, lng:14.4811414 },
+      { item:"Il Tridente",                         detail:"Positano",    lat:40.6288985, lng:14.4849206 },
+      { item:"Saraceno D'Oro",                      detail:"Positano",    lat:40.6285642, lng:14.4809475 },
+      { item:"Villa Verde",                         detail:"Capri",       lat:40.5500444, lng:14.2444639 },
+      { item:"Casa Mele",                           detail:"Capri",       lat:40.5532009, lng:14.2221540 },
+      { item:"Al Ruotolo",                          detail:"Naples",      lat:40.8519413, lng:14.2465921 },
     ],
     bars:        [
-      { item:"Don't Worry Bar",                     detail:"Positano",    lat:40.6281, lng:14.4856 },
-      { item:"Hotel Palazzo Murat",                 detail:"Positano",    lat:40.6280, lng:14.4848 },
-      { item:"Il Capitano",                         detail:"Positano",    lat:40.6268, lng:14.4862 },
+      { item:"Don't Worry Bar",                     detail:"Positano",    lat:40.6288599, lng:14.4875752 },
+      { item:"Hotel Palazzo Murat",                 detail:"Positano",    lat:40.6289226, lng:14.4867725 },
+      { item:"Il Capitano",                         detail:"Positano",    lat:40.6274490, lng:14.4845390 },
     ],
     activities:  [
-      { item:"Amalfi Heaven Gardens Cooking Class", detail:"Amalfi",      lat:40.6350, lng:14.6022 },
-      { item:"Cathedral of Sant Andrea",            detail:"Amalfi",      lat:40.6342, lng:14.6027 },
-      { item:"Ferry to Capri",                      detail:"Positano",    lat:40.6264, lng:14.4871 },
-      { item:"Ferry to Amalfi",                     detail:"Positano",    lat:40.6264, lng:14.4871 },
+      { item:"Amalfi Heaven Gardens Cooking Class", detail:"Amalfi",      lat:40.6255051, lng:14.5859367 },
+      { item:"Cathedral of Sant'Andrea",            detail:"Amalfi",      lat:40.6344504, lng:14.6029926 },
+      { item:"Ferry to Capri",                      detail:"Positano",    lat:40.6272221, lng:14.4862402 },
+      { item:"Ferry to Amalfi",                     detail:"Positano",    lat:40.6272221, lng:14.4862402 },
     ],
   };
 
@@ -442,7 +442,7 @@ export default function handler(req, res) {
           ? "<Point><coordinates>" + p.lng + "," + p.lat + ",0</coordinates></Point>"
           : "";
         parts.push(
-          "<Placemark><n>" + xmlEsc(p.item) + "</n>" +
+          "<Placemark><name>" + xmlEsc(p.item) + "</name>" +
           "<description>" + xmlEsc(cat.label + (p.detail ? " - " + p.detail : "")) + "</description>" +
           "<Style><IconStyle><color>" + cat.color + "</color></IconStyle></Style>" +
           pt + "</Placemark>"
@@ -450,7 +450,7 @@ export default function handler(req, res) {
       }
     }
 
-    const kml = '<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><n>' + xmlEsc(TRIP.title) + '</n>' + parts.join("") + '</Document></kml>';
+    const kml = '<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + xmlEsc(TRIP.title) + '</name>' + parts.join("") + '</Document></kml>';
     const blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
