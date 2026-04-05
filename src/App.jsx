@@ -4335,6 +4335,15 @@ export default function App() {
       {/* Hero — Warm Nomad */}
       <div style={{ background:C.seafoam, padding:"16px 0 14px", margin:"0", textAlign:"center", position:"relative", overflow:"hidden", borderBottom:`1px solid ${C.tide}` }}>
         <div style={{ position:"absolute", inset:0, backgroundImage:"radial-gradient(circle at 20% 50%, rgba(196,168,130,0.08) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(193,105,42,0.06) 0%, transparent 50%)", pointerEvents:"none" }} />
+        {!isMobile && (
+          <button onClick={() => setShowHowItWorks(true)} style={{ position:"absolute", left:"28px", top:"50%", transform:"translateY(-50%)", width:"120px", background:C.amber, border:"none", borderRadius:"12px", cursor:"pointer", padding:"16px 12px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"6px", boxShadow:"0 3px 14px rgba(193,105,42,0.3)", fontFamily:"'Nunito',sans-serif", zIndex:10 }}
+            onMouseEnter={e => { e.currentTarget.style.filter="brightness(1.06)"; e.currentTarget.style.boxShadow="0 5px 20px rgba(193,105,42,0.4)"; }}
+            onMouseLeave={e => { e.currentTarget.style.filter="brightness(1)"; e.currentTarget.style.boxShadow="0 3px 14px rgba(193,105,42,0.3)"; }}>
+            <div style={{ width:"34px", height:"34px", borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px", color:"#fff", fontWeight:700 }}>?</div>
+            <div style={{ fontSize:"11px", fontWeight:700, color:"#fff", lineHeight:1.3, textAlign:"center" }}>How Does<br/>This Work?</div>
+            <div style={{ fontSize:"9px", fontWeight:600, color:"rgba(255,255,255,0.8)", lineHeight:1.3, textAlign:"center" }}>Browse · Submit<br/>Unlock Blueprint</div>
+          </button>
+        )}
 
         <div style={{ position:"relative", maxWidth:"680px", margin:"0 auto", padding:"0 16px" }}>
           <h1 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:"clamp(22px,4.5vw,46px)", fontWeight:700, color:C.slate, margin:"0 0 10px", lineHeight:1.15, letterSpacing:"-0.01em" }}>
@@ -4382,12 +4391,6 @@ export default function App() {
             {/* Collapse button */}
             <button onClick={() => setSidebarOpen(false)} style={{ width:"100%", padding:"7px 12px", borderRadius:"8px", border:`1px solid ${C.tide}`, background:C.white, color:C.muted, fontSize:"11px", fontWeight:600, cursor:"pointer", marginBottom:"14px", textAlign:"left", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <span>Hide sidebar</span><span>←</span>
-            </button>
-
-            {/* How Does This Work button — above filters */}
-            <button onClick={() => setShowHowItWorks(true)} style={{ width:"100%", padding:"13px 16px", borderRadius:"12px", border:"none", background:C.amber, color:"#fff", cursor:"pointer", fontFamily:"'Nunito',sans-serif", marginBottom:"14px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"4px", boxShadow:"0 2px 10px rgba(193,105,42,0.25)" }}>
-              <div style={{ fontSize:"13px", fontWeight:700, lineHeight:1.2 }}>How Does This Work?</div>
-              <div style={{ fontSize:"10px", fontWeight:500, color:"rgba(255,255,255,0.8)", lineHeight:1.3, textAlign:"center" }}>Browse · Submit · Unlock a Blueprint</div>
             </button>
 
             {/* Trip type filter */}
