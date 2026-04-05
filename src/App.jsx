@@ -4341,7 +4341,12 @@ export default function App() {
         {!isMobile && (
           <div style={{ position:"absolute", left:"28px", top:"50%", transform:"translateY(-50%)", zIndex:10 }}>
             <button onClick={() => setShowHowItWorks(true)} className="tc-btn" style={{ width:"120px", background:C.amber, border:"none", borderRadius:"12px", cursor:"pointer", padding:"16px 12px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"6px", boxShadow:"0 3px 14px rgba(193,105,42,0.3)", fontFamily:"'Nunito',sans-serif" }}>
-              <div style={{ width:"34px", height:"34px", borderRadius:"50%", background:"rgba(255,255,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px", color:"#fff", fontWeight:700 }}>?</div>
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 4C11.582 4 8 7.582 8 12c0 2.8 1.4 5.274 3.556 6.8L12 22h8l.444-3.2C22.6 17.274 24 14.8 24 12c0-4.418-3.582-8-8-8z" fill="white"/>
+                <rect x="12" y="22" width="8" height="2" rx="1" fill="white"/>
+                <rect x="13" y="25" width="6" height="2" rx="1" fill="white"/>
+                <rect x="14" y="28" width="4" height="1.5" rx="0.75" fill="rgba(255,255,255,0.6)"/>
+              </svg>
               <div style={{ fontSize:"11px", fontWeight:700, color:"#fff", lineHeight:1.3, textAlign:"center" }}>How Does<br/>This Work?</div>
               <div style={{ fontSize:"9px", fontWeight:600, color:"rgba(255,255,255,0.8)", lineHeight:1.3, textAlign:"center" }}>Browse · Submit<br/>Unlock Blueprint</div>
             </button>
@@ -4352,19 +4357,15 @@ export default function App() {
           <h1 style={{ fontFamily:"'Playfair Display',Georgia,serif", fontSize:"clamp(22px,4.5vw,46px)", fontWeight:700, color:C.slate, margin:"0 0 10px", lineHeight:1.15, letterSpacing:"-0.01em" }}>
             Planned by others. Perfected by you.
           </h1>
-          <div style={{ display:"flex", gap:"8px", justifyContent:"center", alignItems:"center", flexWrap:"wrap", marginBottom:"12px" }}>
-            <button onClick={() => { const el = document.getElementById("trip-grid"); if(el) el.scrollIntoView({ behavior:"smooth" }); }} style={{ background:C.amber, color:C.slate, border:`1.5px solid ${C.amber}`, borderRadius:"6px", padding:"7px 16px", fontSize:"12px", fontWeight:500, cursor:"pointer", fontFamily:"'Nunito',sans-serif", letterSpacing:"0.01em" }}>
-              Leverage a Copycat
-            </button>
-            <button onClick={() => openSubmit()} style={{ background:"transparent", color:C.slate, border:`1.5px solid ${C.slate}`, borderRadius:"6px", padding:"7px 16px", fontSize:"12px", fontWeight:500, cursor:"pointer", fontFamily:"'Nunito',sans-serif", letterSpacing:"0.01em" }}>
+          <div style={{ display:"flex", gap:"10px", justifyContent:"center", alignItems:"center", flexWrap:"wrap", marginBottom:"12px" }}>
+            <button onClick={() => openSubmit()} style={{ background:C.amber, color:"#fff", border:`2px solid ${C.amber}`, borderRadius:"6px", padding:"9px 20px", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
               Submit a Trip →
             </button>
-            <button onClick={() => { window.location.href = "/blueprint/sample"; }} style={{ background:"#FAF7F2", color:"#1C2B3A", border:"2px solid #C4A882", borderRadius:"6px", padding:"7px 14px", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"inline-flex", alignItems:"center", gap:"6px" }}>
-              <span style={{ display:"inline-block", transform:"rotate(-45deg)", fontSize:"12px", lineHeight:1, color:"#C4A882" }}>▲</span>
+            <button onClick={() => { window.location.href = "/blueprint/sample"; }} style={{ background:"transparent", color:C.amber, border:`2px solid ${C.amber}`, borderRadius:"6px", padding:"9px 18px", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif", display:"inline-flex", alignItems:"center", gap:"6px" }}>
+              <span style={{ fontSize:"11px" }}>▲</span>
               Sample Blueprint
-              <span style={{ background:"#C4A882", color:"#1C2B3A", fontSize:"9px", fontWeight:700, padding:"1px 6px", borderRadius:"20px" }}>FREE</span>
+              <span style={{ background:C.amber, color:"#fff", fontSize:"9px", fontWeight:700, padding:"1px 6px", borderRadius:"20px" }}>FREE</span>
             </button>
-
           </div>
           <div style={{ maxWidth:"500px", margin:"0 auto", position:"relative" }}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search destinations, trips, activities…" style={{ width:"100%", padding:"10px 18px 10px 42px", borderRadius:"50px", border:`1.5px solid ${C.tide}`, fontSize:"13px", outline:"none", boxSizing:"border-box", background:C.white, color:C.slate, boxShadow:`0 2px 12px rgba(28,43,58,0.07)`, fontFamily:"'Nunito',sans-serif" }} />
@@ -4373,7 +4374,14 @@ export default function App() {
           {isMobile && (
             <button onClick={() => setShowHowItWorks(true)} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", maxWidth:"500px", margin:"10px auto 0", padding:"11px 18px", background:C.slate, borderRadius:"10px", border:"none", cursor:"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"left" }}>
               <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                <div style={{ width:"28px", height:"28px", borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"14px", flexShrink:0 }}>?</div>
+                <div style={{ width:"28px", height:"28px", borderRadius:"50%", background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <svg width="16" height="16" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M16 4C11.582 4 8 7.582 8 12c0 2.8 1.4 5.274 3.556 6.8L12 22h8l.444-3.2C22.6 17.274 24 14.8 24 12c0-4.418-3.582-8-8-8z" fill="white"/>
+                      <rect x="12" y="22" width="8" height="2" rx="1" fill="white"/>
+                      <rect x="13" y="25" width="6" height="2" rx="1" fill="white"/>
+                      <rect x="14" y="28" width="4" height="1.5" rx="0.75" fill="rgba(255,255,255,0.6)"/>
+                    </svg>
+                  </div>
                 <div>
                   <div style={{ fontSize:"12px", fontWeight:700, color:"#fff", lineHeight:1.2 }}>How Does This Work?</div>
                   <div style={{ fontSize:"10px", color:"rgba(255,255,255,0.6)", marginTop:"2px" }}>Browse trips · Submit yours · Unlock a Blueprint</div>
