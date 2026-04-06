@@ -1047,8 +1047,13 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark, isAdmin 
                         r3: rests[2] || "",
                       });
                       const url = `/instagram-template.html?${params.toString()}`;
-                      const w = window.open("", "_blank", "noopener,noreferrer");
-                      if (w) { w.location.href = url; } else { window.location.href = url; }
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.target = "_blank";
+                      a.rel = "noopener noreferrer";
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
                     };
                     return (
                       <button onClick={handleGenPost} onTouchEnd={e=>{e.stopPropagation();e.preventDefault();handleGenPost(e);}} style={{ background:"rgba(193,105,42,0.3)", border:"1px solid rgba(193,105,42,0.6)", color:"#FAF7F2", borderRadius:"8px", padding:"5px 10px", cursor:"pointer", fontSize:"11px", fontWeight:700, touchAction:"manipulation", whiteSpace:"nowrap" }}>📸 Post</button>
