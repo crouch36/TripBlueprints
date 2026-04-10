@@ -486,7 +486,7 @@ function PhotoImportModal({ onClose, onComplete, skipCloseOnComplete }) {
     setProgressLabel("Compressing photos…");
     const compressed = [];
     for (let i = 0; i < fileArr.length; i++) {
-      const b64 = await compressImage(fileArr[i], 800, 0.5);
+      const b64 = await compressImage(fileArr[i]);
       if (b64) compressed.push({ b64, meta: metaArr[i], idx: i });
       setProgress(30 + Math.round((i + 1) / fileArr.length * 40));
     }
@@ -514,29 +514,13 @@ function PhotoImportModal({ onClose, onComplete, skipCloseOnComplete }) {
         }))
       ];
 
-      // Guard against Vercel 4.5MB payload limit
-      const photoBytes = compressed.reduce((sum, p) => sum + (p.b64?.length || 0), 0);
-      const totalBytes = photoBytes + JSON.stringify({ contents: [{ parts: [parts[0]] }] }).length;
-      if (totalBytes > 3_500_000) {
-        // Too large — drop photos until under limit, keeping most recent
-        while (compressed.length > 1) {
-          compressed.shift();
-          const newParts = [parts[0], ...compressed.map(p => ({ inline_data: { mime_type: "image/jpeg", data: p.b64 } }))];
-          const newBytes = compressed.reduce((sum, p) => sum + (p.b64?.length || 0), 0);
-          if (newBytes < 3_000_000) break;
-        }
-        setProgressLabel(`Optimising ${compressed.length} photos for upload…`);
-      }
-
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 45000);
-
-      const finalParts = [parts[0], ...compressed.map(p => ({ inline_data: { mime_type: "image/jpeg", data: p.b64 } }))];
 
       const res = await fetch("/api/gemini", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: finalParts }] }),
+          body: JSON.stringify({ contents: [{ parts }] }),
           signal: controller.signal
         });
       clearTimeout(timeoutId);
