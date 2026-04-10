@@ -417,7 +417,7 @@ async function extractExif(file) {
 }
 
 // Compress image via Canvas to ~200KB max
-async function compressImage(file, maxW = 1200, quality = 0.65) {
+async function compressImage(file, maxW = 600, quality = 0.4) {
   return new Promise(resolve => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -486,7 +486,7 @@ function PhotoImportModal({ onClose, onComplete, skipCloseOnComplete }) {
     setProgressLabel("Compressing photos…");
     const compressed = [];
     for (let i = 0; i < fileArr.length; i++) {
-      const b64 = await compressImage(fileArr[i]);
+      const b64 = await compressImage(fileArr[i], 600, 0.4);
       if (b64) compressed.push({ b64, meta: metaArr[i], idx: i });
       setProgress(30 + Math.round((i + 1) / fileArr.length * 40));
     }
