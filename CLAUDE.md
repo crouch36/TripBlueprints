@@ -244,13 +244,23 @@ If ANY fail → do not push. Fix first.
 
 ## SEO Infrastructure
 
-- `api/trip/[id].js` server-renders trip pages for Googlebot
-- Canonical URL format: `/trips/:id` (plural — matches sitemap)
-- `vercel.json` rewrites: both `/trip/:id` AND `/trips/:id` route to `api/trip/[id].js`
-- Sitemap generates `/trips/:id` URLs
+- `api/trip/[id].js` server-renders trip pages for Googlebot — always returns 200, no redirects inside
+- Canonical URL format: `/trips/:id` (plural — matches both sitemaps)
+- `vercel.json` rewrites: both `/trip/:id` AND `/trips/:id` route to `api/trip/[id].js` — transparent rewrites, not redirects
 - JSON-LD: `TouristTrip` + `FAQPage` schema on each trip page
-- Google Search Console: 8 trip pages requested for indexing Apr 8 2026
-- Homepage: 18 clicks, 32 impressions, avg position 1.3
+
+### Sitemaps — CRITICAL: both files must use `https://www.tripcopycat.com` (www) and `/trips/` (plural)
+- `scripts/generate-sitemap.js` — build-time, writes `public/sitemap.xml`. Runs as part of `npm run build`.
+- `api/sitemap.xml.js` — runtime serverless, served at `/sitemap.xml` via vercel.json rewrite.
+- **Previous bug (fixed Apr 11 2026):** `generate-sitemap.js` was using `https://tripcopycat.com` (no www) and `api/sitemap.xml.js` was using `/trip/` (singular). This caused Google to flag all 8 trip pages as redirect errors and refuse to index them. Both files now use www + `/trips/`.
+- Do NOT change SITE_URL in either file without updating both simultaneously.
+
+### Console noise — not a bug
+- Travelpayouts `[tp] config is not valid` error in browser console — harmless. Their tracker script is noisy when no affiliate widgets are present. Ignore it.
+
+### Current indexing status (Apr 11 2026)
+- 8 trip pages resubmitted for indexing after sitemap fix — expect Google to recrawl within days
+- `www.tripcopycat.com/index.html` showing as "Alternate page with proper canonical" — harmless, Google correctly deferring to canonical homepage
 
 ---
 
@@ -333,4 +343,4 @@ Full `C` object now lives in `src/constants.js` and is imported by all split com
 
 ---
 
-*Last updated: April 11, 2026 — Component split complete (constants.js, PhotoImportModal, HybridProcessor, SubmitFormStep, SubmitTripModal). Form freeze fixed via forwardRef/useImperativeHandle pattern — form state now owned by SubmitFormStep, SubmitTripModal header never re-renders on keystrokes. Full submit flow tested end-to-end. Approval 403 fixed — trips insert now routed through api/approve-submission.js using service role key; client anon key blocked by RLS on trips table.*
+*Last updated: April 11, 2026 — Component split complete. Form freeze fixed. Approval 403 fixed (service role via api/approve-submission.js). Cover photo empty string bug fixed. Sitemap www/plural bug fixed — all 8 trip pages resubmitted for indexing. Gallery photos restored on all pre-migration trips. All trips published and confirmed working.*
