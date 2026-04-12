@@ -4263,7 +4263,7 @@ export default function App() {
   // Admin state
   const isAdminUrl = window.location.pathname === "/admin" || window.location.hash === "#admin";
   const [showAdminLogin, setShowAdminLogin] = useState(isAdminUrl);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem("tc_admin") === "1");
   const [showAnalytics, setShowAnalytics] = useState(false);
 
   // Trigger admin login if navigated to #admin after mount
@@ -4275,7 +4275,7 @@ export default function App() {
     window.addEventListener("hashchange", checkAdmin);
     return () => window.removeEventListener("hashchange", checkAdmin);
   }, [isAdmin]);
-  const handleAdminLogin = () => { setIsAdmin(true); setShowAdminLogin(false); };
+  const handleAdminLogin = () => { setIsAdmin(true); setShowAdminLogin(false); sessionStorage.setItem("tc_admin", "1"); };
   const [showLegal, setShowLegal] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showMoreTags, setShowMoreTags] = useState(false);
@@ -4349,7 +4349,7 @@ export default function App() {
           <div style={{ fontSize:"12px", fontWeight:700, color:C.white, display:"flex", alignItems:"center", gap:"8px" }}>
             <span>🔐</span> Admin Mode Active — you can edit, delete and add trips
           </div>
-          <button onClick={() => setIsAdmin(false)} style={{ fontSize:"11px", fontWeight:700, color:C.white, background:"rgba(255,255,255,0.2)", border:"none", borderRadius:"6px", padding:"4px 12px", cursor:"pointer" }}>Exit Admin</button>
+          <button onClick={() => { setIsAdmin(false); sessionStorage.removeItem("tc_admin"); }} style={{ fontSize:"11px", fontWeight:700, color:C.white, background:"rgba(255,255,255,0.2)", border:"none", borderRadius:"6px", padding:"4px 12px", cursor:"pointer" }}>Exit Admin</button>
         </div>
       )}
 
