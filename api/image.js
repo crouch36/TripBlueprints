@@ -6,8 +6,11 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Only allow proxying from our Supabase bucket
-  const allowed = "wnjxtjeospeblvqdqsdj.supabase.co";
+  // Allow proxying from our Supabase bucket and Cloudflare R2 bucket
+  const allowedHosts = [
+    "wnjxtjeospeblvqdqsdj.supabase.co",
+    "pub-f680025b41de449893423994b6e1c42b.r2.dev",
+  ];
   let parsed;
   try {
     parsed = new URL(url);
@@ -16,7 +19,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (!parsed.hostname.endsWith(allowed)) {
+  if (!allowedHosts.some(h => parsed.hostname.endsWith(h))) {
     res.status(403).send("Forbidden");
     return;
   }
