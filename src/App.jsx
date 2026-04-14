@@ -1069,6 +1069,8 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark, isAdmin 
                         r1: rests[0] || "",
                         r2: rests[1] || "",
                         r3: rests[2] || "",
+                        tripId: trip.id || "",
+                        mapsKey: import.meta.env.VITE_GOOGLE_MAPS_KEY || "",
                       });
                       const url = `/instagram-template.html?${params.toString()}`;
                       const a = document.createElement("a");

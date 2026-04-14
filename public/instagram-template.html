@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TripCopycat — Instagram Post</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=DM+Sans:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #111820;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 28px 16px 48px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .controls button {
+      padding: 10px 22px;
+      border-radius: 8px;
+      border: none;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: opacity .15s;
+    }
+    .controls button:hover { opacity: 0.88; }
+    .btn-download { background: #FAF7F2; color: #1C2B3A; }
+    .btn-copy     { background: #C4A882; color: #1C2B3A; }
+    .btn-regen    { background: rgba(255,255,255,0.08); color: #FAF7F2; border: 1px solid rgba(255,255,255,0.18) !important; }
+
+    /* ── Post card — 1:1 square ── */
+    .post-wrap {
+      width: min(560px, 100vw - 32px);
+      aspect-ratio: 1 / 1;
+      position: relative;
+      border-radius: 3px;
+      overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.7);
+    }
+
+    .post-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      background-color: #1C2B3A;
+    }
+
+    /* Gradient: transparent top, heavy dark bottom */
+    .post-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.08) 0%,
+        rgba(0,0,0,0.0)  20%,
+        rgba(0,0,0,0.45) 55%,
+        rgba(0,0,0,0.88) 100%
+      );
+    }
+
+    /* Content */
+    .post-content {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 5%;
+    }
+
+    /* ── Top bar ── */
+    .post-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    /* Verified badge — top left */
+    .post-badge {
+      background: #C4A882;
+      color: #1C2B3A;
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(7px, 1.5vw, 10px);
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Logo — top right */
+    .post-logo {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(9px, 1.8vw, 12px);
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
+      letter-spacing: 0.04em;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    }
+    .post-logo img {
+      width: clamp(16px, 3vw, 22px);
+      height: clamp(16px, 3vw, 22px);
+      object-fit: contain;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+    }
+
+    /* ── Bottom content ── */
+    .post-bottom {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* Utility label — "VERIFIED PATH:" */
+    .post-label {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(8px, 1.7vw, 11px);
+      font-weight: 800;
+      color: #C4A882;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 3%;
+    }
+
+    /* Destination — big bold sans */
+    .post-dest {
+      font-family: 'DM Sans', 'Inter', sans-serif;
+      font-size: clamp(24px, 7vw, 44px);
+      font-weight: 800;
+      color: #FFFFFF;
+      line-height: 1.05;
+      text-shadow: 0 2px 16px rgba(0,0,0,0.5);
+      letter-spacing: -0.02em;
+      margin-bottom: 3%;
+    }
+
+    /* Duration / travelers */
+    .post-duration {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(9px, 2vw, 13px);
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 3%;
+    }
+
+    /* Amber rule */
+    .post-rule {
+      width: 40px;
+      height: 3px;
+      background: #C4A882;
+      margin-bottom: 3%;
+      border-radius: 2px;
+    }
+
+    /* Quote */
+    .post-quote {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(10px, 2.2vw, 13px);
+      color: rgba(255,255,255,0.88);
+      line-height: 1.6;
+      font-style: italic;
+      max-width: 85%;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+      margin-bottom: 3%;
+    }
+
+    /* Bottom row: map + restaurants */
+    .post-footer {
+      display: flex;
+      gap: 3%;
+      align-items: flex-end;
+    }
+
+    /* Static map snippet */
+    .post-map-wrap {
+      flex-shrink: 0;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1.5px solid rgba(196,168,130,0.5);
+      position: relative;
+    }
+    .post-map-wrap img {
+      display: block;
+      width: clamp(80px, 18vw, 110px);
+      height: clamp(80px, 18vw, 110px);
+      object-fit: cover;
+    }
+    .post-map-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(28,43,58,0.82);
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(6px, 1.2vw, 8px);
+      font-weight: 700;
+      color: #C4A882;
+      text-align: center;
+      padding: 3px 4px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* Restaurants */
+    .post-rests {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex: 1;
+    }
+    .post-rest-item {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(9px, 1.9vw, 12px);
+      color: rgba(255,255,255,0.8);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .post-rest-item::before {
+      content: "🍽";
+      font-size: 0.85em;
+    }
+
+    /* ── Caption panel ── */
+    .caption-panel {
+      margin-top: 20px;
+      width: min(560px, 100vw - 32px);
+    }
+    .caption-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #C4A882;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .caption-box {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 16px 18px;
+    }
+    .caption-text {
+      font-size: 13px;
+      color: rgba(255,255,255,0.82);
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .caption-generating {
+      font-size: 12px;
+      color: #C4A882;
+      font-style: italic;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(196,168,130,0.3);
+      border-top-color: #C4A882;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .copy-feedback {
+      font-size: 11px;
+      color: #7A9E5A;
+      margin-top: 8px;
+      font-weight: 600;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="controls">
+  <button class="btn-download" onclick="downloadCard()">⬇ Download Image</button>
+  <button class="btn-copy" onclick="copyCaption()">📋 Copy Caption</button>
+  <button class="btn-regen" onclick="generateCaption()">✦ Regenerate Caption</button>
+</div>
+
+<!-- Post card -->
+<div class="post-wrap" id="post-card">
+  <div class="post-bg" id="post-bg"></div>
+  <div class="post-overlay"></div>
+  <div class="post-content">
+
+    <!-- Top bar -->
+    <div class="post-top">
+      <div class="post-badge">✦ Verified Path</div>
+      <span class="post-logo">
+        <img src="/copycat.svg" alt="TripCopycat" />
+        TripCopycat
+      </span>
+    </div>
+
+    <!-- Bottom content -->
+    <div class="post-bottom">
+      <div class="post-label" id="post-label">VERIFIED PATH</div>
+      <div class="post-dest" id="post-dest"></div>
+      <div class="post-duration" id="post-duration"></div>
+      <div class="post-rule"></div>
+      <div class="post-quote" id="post-quote"></div>
+      <div class="post-footer">
+        <div class="post-map-wrap" id="post-map-wrap" style="display:none">
+          <img id="post-map-img" src="" alt="Venue map" crossorigin="anonymous" />
+          <div class="post-map-label">Get your custom map →</div>
+        </div>
+        <div class="post-rests" id="post-rests"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Caption -->
+<div class="caption-panel" id="caption-panel">
+  <div class="caption-label">Instagram Caption</div>
+  <div class="caption-box">
+    <div class="caption-text" id="caption-text">
+      <span class="caption-generating"><span class="spinner"></span>Writing caption with AI…</span>
+    </div>
+    <div class="copy-feedback" id="copy-feedback">✓ Copied to clipboard</div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://wnjxtjeospeblvqdqsdj.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Induanh0amVvc3BlYmx2cWRxc2RqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3MTI2MjQsImV4cCI6MjA4OTI4ODYyNH0.l3OHQ9_v5__lkX_AryEkmg2uYGgxnTR4KqViV8foNls";
+
+  // ── Parse params ──────────────────────────────────────────────────────────
+  const p        = new URLSearchParams(window.location.search);
+  const dest     = p.get("dest")     || "Your Destination";
+  const duration = p.get("duration") || "";
+  const quote    = p.get("quote")    || "";
+  const photo    = p.get("photo")    || "";
+  const r1       = p.get("r1")       || "";
+  const r2       = p.get("r2")       || "";
+  const r3       = p.get("r3")       || "";
+  const tripId   = p.get("tripId")   || "";
+  const mapsKey  = p.get("mapsKey")  || "";
+
+  // ── Populate card ─────────────────────────────────────────────────────────
+  // Destination — uppercase city name only
+  const cityOnly = dest.split(",")[0].trim().toUpperCase();
+  document.getElementById("post-dest").textContent     = cityOnly;
+  document.getElementById("post-duration").textContent = duration;
+  document.getElementById("post-label").textContent    = "VERIFIED PATH: " + dest.toUpperCase();
+  document.getElementById("post-quote").textContent    = quote ? `"${quote.slice(0, 120)}"` : "";
+
+  if (photo) {
+    document.getElementById("post-bg").style.backgroundImage = `url(${JSON.stringify(photo)})`;
+  }
+
+  const restsEl = document.getElementById("post-rests");
+  const rests = [r1, r2, r3].filter(Boolean);
+  rests.forEach(r => {
+    const span = document.createElement("span");
+    span.className = "post-rest-item";
+    span.textContent = r;
+    restsEl.appendChild(span);
+  });
+
+  // ── Static map via venue_coords ───────────────────────────────────────────
+  if (tripId && mapsKey) {
+    fetch(`${SUPABASE_URL}/rest/v1/trips?id=eq.${tripId}&select=venue_coords,hotels,restaurants,bars,activities`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+    })
+    .then(r => r.json())
+    .then(rows => {
+      const trip = rows?.[0];
+      if (!trip?.venue_coords) return;
+      const CAT_COLORS = { hotels:"red", restaurants:"blue", bars:"purple", activities:"green" };
+      const markerParams = [];
+      for (const [cat, coords] of Object.entries(trip.venue_coords)) {
+        const color = CAT_COLORS[cat] || "gray";
+        (coords || []).forEach(c => {
+          if (c?.lat && c?.lng) markerParams.push(`markers=color:${color}%7C${c.lat},${c.lng}`);
+        });
+      }
+      if (!markerParams.length) return;
+      const mapUrl = `https://maps.googleapis.com/maps/api/staticmap?size=220x220&scale=2&maptype=roadmap&style=feature:all|element:labels|visibility:simplified&${markerParams.join("&")}&key=${mapsKey}`;
+      const mapImg = document.getElementById("post-map-img");
+      mapImg.src = mapUrl;
+      mapImg.onload = () => { document.getElementById("post-map-wrap").style.display = "block"; };
+    })
+    .catch(() => {});
+  }
+
+  // ── AI Caption via Gemini ─────────────────────────────────────────────────
+  let generatedCaption = "";
+
+  async function generateCaption() {
+    const captionEl = document.getElementById("caption-text");
+    captionEl.innerHTML = '<span class="caption-generating"><span class="spinner"></span>Writing caption with AI…</span>';
+
+    const prompt = `You are writing an Instagram caption for TripCopycat — a platform that publishes verified, user-tested travel itineraries. TripCopycat's voice is: a well-traveled manager who cuts through the noise and gives you the logical, tested path. Think "Manager's Guide" not "travel blog."
+
+Trip details:
+- Destination: ${dest}
+- Duration: ${duration}
+- What they loved: ${quote}
+- Top restaurants: ${rests.join(", ") || "not specified"}
+
+Write a punchy Instagram caption using ONE of these hook frameworks (choose the best fit for this destination):
+1. The "Anti-Tourist" — calls out over-tourism and positions this as the smarter alternative
+2. The "Logic Play" — emphasizes user-tested, verified value
+3. The "Cheat Code" — gamifies the trip as an insider shortcut
+
+Format:
+[HOOK — 1 punchy line that stops the scroll]
+
+[2-3 sentences of "Manager's Memo" reasoning — why this trip, why now, what makes it different]
+
+✈️ Get the full Verified Path at tripcopycat.com 🔗 [Link in Bio]
+
+[5-7 relevant hashtags including #TripCopycat #VerifiedPath]
+
+Keep it under 300 words. No em-dashes. Sound like a smart traveler, not a bot.`;
+
+    try {
+      const res = await fetch("/api/gemini", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      });
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      if (text) {
+        generatedCaption = text.trim();
+        captionEl.textContent = generatedCaption;
+      } else {
+        captionEl.textContent = fallbackCaption();
+        generatedCaption = captionEl.textContent;
+      }
+    } catch(e) {
+      captionEl.textContent = fallbackCaption();
+      generatedCaption = captionEl.textContent;
+    }
+  }
+
+  function fallbackCaption() {
+    const restsLine = rests.length ? `\n\n🍽️ ${rests.join(" · ")}` : "";
+    return `Stop guessing your route.\n\n${dest} — ${duration}. Verified by a real traveler, not an algorithm.${quote ? `\n\n"${quote.slice(0, 120)}"` : ""}${restsLine}\n\n✈️ Get the full Verified Path at tripcopycat.com 🔗 [Link in Bio]\n\n#TripCopycat #VerifiedPath #${cityOnly.replace(/\s+/g, "")}Travel #TravelItinerary #TravelGuide`;
+  }
+
+  function copyCaption() {
+    const text = generatedCaption || document.getElementById("caption-text").textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const fb = document.getElementById("copy-feedback");
+      fb.style.display = "block";
+      setTimeout(() => { fb.style.display = "none"; }, 2500);
+    }).catch(() => {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    });
+  }
+
+  // ── Download via html2canvas ──────────────────────────────────────────────
+  function downloadCard() {
+    const btn = document.querySelector(".btn-download");
+    btn.textContent = "Generating…";
+    btn.disabled = true;
+
+    const doCapture = () => {
+      html2canvas(document.getElementById("post-card"), {
+        useCORS: true,
+        allowTaint: true,
+        scale: 2,
+        logging: false,
+      }).then(canvas => {
+        const a = document.createElement("a");
+        a.download = `tripcopycat-${cityOnly.toLowerCase().replace(/\s+/g, "-")}.png`;
+        a.href = canvas.toDataURL("image/png");
+        a.click();
+        btn.textContent = "⬇ Download Image";
+        btn.disabled = false;
+      }).catch(() => {
+        btn.textContent = "⬇ Download Image";
+        btn.disabled = false;
+        alert("Could not generate image — try screenshotting instead.");
+      });
+    };
+
+    if (!window.html2canvas) {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+      s.onload = doCapture;
+      s.onerror = () => { btn.textContent = "⬇ Download Image"; btn.disabled = false; alert("Could not load image library."); };
+      document.head.appendChild(s);
+    } else { doCapture(); }
+  }
+
+  // Auto-generate caption on load
+  generateCaption();
+</script>
+</body>
+</html>
