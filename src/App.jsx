@@ -2186,6 +2186,103 @@ function SubmitTripModal({ onClose, currentUser, displayName, onSubmitSuccess, p
   );
 }
 
+// ── Pin Review Map ────────────────────────────────────────────────────────────
+// Inline map shown in admin Completed tab. Reads already-stored venue_coords —
+// zero additional geocoding API calls.
+function PinReviewMap({ tripId, onClose }) {
+  const [coords, setCoords] = useState(null);
+  const [tripVenues, setTripVenues] = useState(null);
+  const [status, setStatus] = useState("loading");
+  const mapRef = useRef(null);
+
+  const load = () => {
+    setStatus("loading");
+    supabase.from("trips")
+      .select("hotels, restaurants, bars, activities, venue_coords")
+      .eq("id", tripId)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error || !data) { setStatus("error"); return; }
+        if (!data.venue_coords || !Object.keys(data.venue_coords).length) { setStatus("empty"); return; }
+        setTripVenues(data);
+        setCoords(data.venue_coords);
+        setStatus("ready");
+      });
+  };
+
+  useEffect(() => { load(); }, [tripId]);
+
+  useEffect(() => {
+    if (status !== "ready" || !coords || !mapRef.current) return;
+    const key = import.meta.env.VITE_GOOGLE_MAPS_KEY || "";
+    if (!key) return;
+    const CAT_COLORS = { hotels:"#C1392B", restaurants:"#2980B9", bars:"#8E44AD", activities:"#27AE60" };
+
+    const renderMap = () => {
+      if (!window.google || !mapRef.current) return;
+      const pins = [];
+      for (const [cat, coordArr] of Object.entries(coords)) {
+        const venues = tripVenues?.[cat] || [];
+        (coordArr || []).forEach((c, i) => {
+          if (c?.lat && c?.lng) pins.push({ lat: c.lat, lng: c.lng, name: venues[i]?.item || cat, color: CAT_COLORS[cat] || "#888" });
+        });
+      }
+      if (!pins.length) { setStatus("empty"); return; }
+      const map = new window.google.maps.Map(mapRef.current, {
+        zoom: 10, center: { lat: pins[0].lat, lng: pins[0].lng },
+        mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
+      });
+      const bounds = new window.google.maps.LatLngBounds();
+      const iw = new window.google.maps.InfoWindow();
+      pins.forEach(pin => {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 28 36"><path d="M14 0C6.268 0 0 6.268 0 14c0 9.333 14 22 14 22S28 23.333 28 14C28 6.268 21.732 0 14 0z" fill="${pin.color}"/><circle cx="14" cy="14" r="6" fill="white"/></svg>`;
+        const m = new window.google.maps.Marker({
+          position: { lat: pin.lat, lng: pin.lng }, map,
+          icon: { url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg), scaledSize: new window.google.maps.Size(24, 32), anchor: new window.google.maps.Point(12, 32) },
+          title: pin.name,
+        });
+        m.addListener("click", () => { iw.setContent(`<div style="font-size:12px;font-weight:600;padding:2px 4px">${pin.name}</div>`); iw.open(map, m); });
+        bounds.extend({ lat: pin.lat, lng: pin.lng });
+      });
+      if (pins.length > 1) map.fitBounds(bounds);
+    };
+
+    if (window.google) { renderMap(); }
+    else {
+      const existing = document.querySelector('script[src*="maps.googleapis.com"]');
+      if (!existing) {
+        const s = document.createElement("script");
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${key}`;
+        s.async = true; s.onload = renderMap;
+        document.head.appendChild(s);
+      } else { existing.addEventListener("load", renderMap); }
+    }
+  }, [status, coords, tripVenues]);
+
+  return (
+    <div style={{ marginTop:"10px", borderRadius:"10px", border:`1px solid ${C.tide}`, overflow:"hidden" }}>
+      <div style={{ padding:"8px 12px", display:"flex", justifyContent:"space-between", alignItems:"center", background:C.seafoam, borderBottom:`1px solid ${C.tide}` }}>
+        <div style={{ display:"flex", gap:"10px", alignItems:"center" }}>
+          <span style={{ fontSize:"11px", fontWeight:700, color:C.slate }}>📍 Pin Review</span>
+          {[["hotels","#C1392B"],["restaurants","#2980B9"],["bars","#8E44AD"],["activities","#27AE60"]].map(([cat,col]) => (
+            <span key={cat} style={{ fontSize:"9px", color:col, fontWeight:700 }}>● {cat}</span>
+          ))}
+        </div>
+        <button onClick={onClose} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:"16px", lineHeight:1 }}>×</button>
+      </div>
+      {status === "loading" && <div style={{ padding:"24px", textAlign:"center", fontSize:"11px", color:C.muted }}>Loading pins…</div>}
+      {status === "error"   && <div style={{ padding:"20px", textAlign:"center", fontSize:"11px", color:C.red }}>Could not load venue coords.</div>}
+      {status === "empty"   && (
+        <div style={{ padding:"16px", textAlign:"center" }}>
+          <div style={{ fontSize:"11px", color:C.muted, marginBottom:"8px" }}>No coords yet — geocoding may still be running.</div>
+          <button onClick={load} style={{ fontSize:"11px", padding:"5px 12px", borderRadius:"6px", border:`1px solid ${C.tide}`, background:C.white, color:C.slateMid, cursor:"pointer" }}>↻ Retry</button>
+        </div>
+      )}
+      {status === "ready" && <div ref={mapRef} style={{ height:"220px", width:"100%" }} />}
+    </div>
+  );
+}
+
 // ── Admin Queue Modal ─────────────────────────────────────────────────────────
 function AdminQueueModal({ onClose, onApprove }) {
   const [submissions, setSubmissions] = useState([]);
@@ -2193,6 +2290,7 @@ function AdminQueueModal({ onClose, onApprove }) {
   const [detail, setDetail] = useState(null);
   const [previewTripId, setPreviewTripId] = useState(null);
   const [queueTab, setQueueTab] = useState("pending");
+  const [pinReviewId, setPinReviewId] = useState(null);
 
   useEffect(() => {
     supabase.from("submissions").select("*").order("submitted_at", { ascending: false })
@@ -2321,9 +2419,13 @@ function AdminQueueModal({ onClose, onApprove }) {
                 </div>
               )}
               {sub.status==="approved" && sub.approved_trip_id && (
-                <div style={{ display:"flex", gap:"7px", marginTop:"6px" }}>
+                <div style={{ display:"flex", gap:"7px", marginTop:"6px", flexWrap:"wrap" }}>
+                  <button onClick={() => setPinReviewId(pinReviewId === sub.approved_trip_id ? null : sub.approved_trip_id)} style={{ padding:"6px 12px", borderRadius:"7px", border:`1px solid ${pinReviewId===sub.approved_trip_id?C.green:C.tide}`, background:pinReviewId===sub.approved_trip_id?C.greenBg:C.seafoam, color:pinReviewId===sub.approved_trip_id?C.green:C.slateMid, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>📍 {pinReviewId===sub.approved_trip_id?"Hide Pins":"Check Pins"}</button>
                   <button onClick={() => setPreviewTripId(sub.approved_trip_id)} style={{ padding:"6px 12px", borderRadius:"7px", border:`1px solid ${C.amber}`, background:C.amberBg, color:C.amber, fontSize:"11px", fontWeight:700, cursor:"pointer" }}>🗺 Preview Blueprint</button>
                 </div>
+              )}
+              {sub.status==="approved" && sub.approved_trip_id && pinReviewId===sub.approved_trip_id && (
+                <PinReviewMap tripId={sub.approved_trip_id} onClose={() => setPinReviewId(null)} />
               )}
             </div>
           ))}
