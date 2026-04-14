@@ -422,7 +422,9 @@ const firstTwoSentences = (q) => {
 document.getElementById("post-quote").textContent = quote ? `"${firstTwoSentences(quote)}"` : "";
 
   if (photo) {
-    document.getElementById("post-bg").style.backgroundImage = `url(${JSON.stringify(photo)})`;
+    // Proxy through /api/image so html2canvas can capture it (R2 CORS blocks direct canvas use)
+    const proxied = photo.startsWith("http") ? `/api/image?url=${encodeURIComponent(photo)}` : photo;
+    document.getElementById("post-bg").style.backgroundImage = `url(${JSON.stringify(proxied)})`;
   }
 
   const restsEl = document.getElementById("post-rests");
