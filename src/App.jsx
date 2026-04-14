@@ -1071,6 +1071,7 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark, isAdmin 
                         r3: rests[2] || "",
                         tripId: trip.id || "",
                         mapsKey: import.meta.env.VITE_GOOGLE_MAPS_KEY || "",
+                        geminiKey: import.meta.env.VITE_GEMINI_API_KEY || "",
                       });
                       const url = `/instagram-template.html?${params.toString()}`;
                       const a = document.createElement("a");

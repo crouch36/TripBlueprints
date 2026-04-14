@@ -366,7 +366,8 @@
   const r2       = p.get("r2")       || "";
   const r3       = p.get("r3")       || "";
   const tripId   = p.get("tripId")   || "";
-  const mapsKey  = p.get("mapsKey")  || "";
+  const mapsKey   = p.get("mapsKey")   || "";
+  const geminiKey = p.get("geminiKey") || "";
 
   // ── Populate card ─────────────────────────────────────────────────────────
   // Destination — uppercase city name only
@@ -378,10 +379,15 @@
 const trimQuote = (q, max) => {
   if (q.length <= max) return q;
   const cut = q.slice(0, max);
-  const lastPeriod = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
-  return lastPeriod > 60 ? q.slice(0, lastPeriod + 1) : cut.trimEnd() + "…";
+  // Try sentence end first, then clause boundary
+  const sentenceEnd = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
+  if (sentenceEnd > 60) return q.slice(0, sentenceEnd + 1);
+  // Fall back to last comma or "and"
+  const clauseEnd = Math.max(cut.lastIndexOf(", and"), cut.lastIndexOf(". And"), cut.lastIndexOf(", "));
+  if (clauseEnd > 60) return q.slice(0, clauseEnd) + ".";
+  return cut.trimEnd() + "…";
 };
-document.getElementById("post-quote").textContent = quote ? `"${trimQuote(quote, 180)}"` : "";
+document.getElementById("post-quote").textContent = quote ? `"${trimQuote(quote, 240)}"` : "";
 
   if (photo) {
     document.getElementById("post-bg").style.backgroundImage = `url(${JSON.stringify(photo)})`;
@@ -453,12 +459,20 @@ Format:
 
 Keep it under 300 words. No em-dashes. Sound like a smart traveler, not a bot.`;
 
+    if (!geminiKey) {
+      captionEl.textContent = fallbackCaption();
+      generatedCaption = captionEl.textContent;
+      return;
+    }
     try {
-      const res = await fetch("/api/gemini", {
+      const model = "gemini-2.0-flash";
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 400 }
         })
       });
       const data = await res.json();
