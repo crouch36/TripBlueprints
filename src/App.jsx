@@ -1059,18 +1059,23 @@ function TripModal({ trip, onClose, allTrips, isBookmarked, onBookmark, isAdmin 
                   {isAdmin && (() => {
                     const handleGenPost = (e) => {
                       e.stopPropagation();
-                      const rests = (trip.restaurants || []).slice(0,3).map(r => r.item).filter(Boolean);
-                      const quote = (trip.loves || "").slice(0, 160);
+                      const quote = (trip.loves || "");
+                      const doNext = (trip.doNext || "");
+                      // Pass all venues so template can pick the most-highlighted ones
+                      const allRests = (trip.restaurants || []).map(r => r.item).filter(Boolean);
+                      const allBars  = (trip.bars || []).map(b => b.item).filter(Boolean);
+                      const allActs  = (trip.activities || []).map(a => a.item).filter(Boolean);
                       const params = new URLSearchParams({
-                        dest: trip.destination || "",
+                        dest:     trip.destination || "",
                         duration: `${trip.duration || ""}${trip.travelers ? " · " + trip.travelers : ""}`,
                         quote,
-                        photo: trip.image || "",
-                        r1: rests[0] || "",
-                        r2: rests[1] || "",
-                        r3: rests[2] || "",
-                        tripId: trip.id || "",
-                        mapsKey: import.meta.env.VITE_GOOGLE_MAPS_KEY || "",
+                        doNext,
+                        photo:    trip.image || "",
+                        rests:    allRests.join("||"),
+                        bars:     allBars.join("||"),
+                        acts:     allActs.join("||"),
+                        tripId:   trip.id || "",
+                        mapsKey:  import.meta.env.VITE_GOOGLE_MAPS_KEY || "",
                         geminiKey: import.meta.env.VITE_GEMINI_API_KEY || "",
                       });
                       const url = `/instagram-template.html?${params.toString()}`;

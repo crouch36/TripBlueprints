@@ -362,12 +362,39 @@
   const duration = p.get("duration") || "";
   const quote    = p.get("quote")    || "";
   const photo    = p.get("photo")    || "";
-  const r1       = p.get("r1")       || "";
-  const r2       = p.get("r2")       || "";
-  const r3       = p.get("r3")       || "";
-  const tripId   = p.get("tripId")   || "";
+  const doNext    = p.get("doNext")    || "";
+  const tripId    = p.get("tripId")    || "";
   const mapsKey   = p.get("mapsKey")   || "";
   const geminiKey = p.get("geminiKey") || "";
+
+  // Parse all venues passed from App.jsx
+  const allRests = p.get("rests") ? p.get("rests").split("||").filter(Boolean) : [];
+  const allBars  = p.get("bars")  ? p.get("bars").split("||").filter(Boolean)  : [];
+  const allActs  = p.get("acts")  ? p.get("acts").split("||").filter(Boolean)  : [];
+  const allVenues = [...allRests, ...allBars, ...allActs];
+
+  // Smart selection: prefer venues mentioned in the "loves" text
+  // This ensures we feature what the user actually highlighted, not just index[0..2]
+  const lovesLower = quote.toLowerCase();
+  const doNextLower = doNext.toLowerCase();
+  const mentioned = allVenues.filter(v => lovesLower.includes(v.toLowerCase()));
+  const notPanned  = allRests.filter(v => !doNextLower.includes(v.toLowerCase()));
+
+  let featured = [];
+  // First: venues specifically called out in loves
+  featured = [...mentioned];
+  // Fill remaining slots with restaurants not mentioned in doNext (not panned)
+  for (const v of notPanned) {
+    if (featured.length >= 3) break;
+    if (!featured.includes(v)) featured.push(v);
+  }
+  // Final fallback: just use first 3 restaurants
+  if (!featured.length) featured = allRests.slice(0, 3);
+  featured = featured.slice(0, 3);
+
+  const r1 = featured[0] || "";
+  const r2 = featured[1] || "";
+  const r3 = featured[2] || "";
 
   // ── Populate card ─────────────────────────────────────────────────────────
   // Destination — uppercase city name only
@@ -378,16 +405,21 @@
   // Cut at last sentence boundary within 180 chars
 const trimQuote = (q, max) => {
   if (q.length <= max) return q;
+  // Prefer a sentence boundary
   const cut = q.slice(0, max);
-  // Try sentence end first, then clause boundary
   const sentenceEnd = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf("! "), cut.lastIndexOf("? "));
   if (sentenceEnd > 60) return q.slice(0, sentenceEnd + 1);
-  // Fall back to last comma or "and"
-  const clauseEnd = Math.max(cut.lastIndexOf(", and"), cut.lastIndexOf(". And"), cut.lastIndexOf(", "));
-  if (clauseEnd > 60) return q.slice(0, clauseEnd) + ".";
-  return cut.trimEnd() + "…";
+  // Otherwise cut at last word boundary and add ellipsis
+  const wordEnd = cut.lastIndexOf(" ");
+  return (wordEnd > 60 ? cut.slice(0, wordEnd) : cut) + "…";
 };
-document.getElementById("post-quote").textContent = quote ? `"${trimQuote(quote, 240)}"` : "";
+// Use first 2 sentences max — keeps it punchy on the card
+const firstTwoSentences = (q) => {
+  const matches = q.match(/[^.!?]+[.!?]+/g);
+  if (!matches || matches.length < 2) return trimQuote(q, 200);
+  return matches.slice(0, 2).join("").trim();
+};
+document.getElementById("post-quote").textContent = quote ? `"${firstTwoSentences(quote)}"` : "";
 
   if (photo) {
     document.getElementById("post-bg").style.backgroundImage = `url(${JSON.stringify(photo)})`;
@@ -441,7 +473,8 @@ Trip details:
 - Destination: ${dest}
 - Duration: ${duration}
 - What they loved: ${quote}
-- Top restaurants: ${rests.join(", ") || "not specified"}
+- Featured venues: ${featured.join(", ") || "not specified"}
+- What they would skip: ${doNext || "not specified"}
 
 Write a punchy Instagram caption using ONE of these hook frameworks (choose the best fit for this destination):
 1. The "Anti-Tourist" — calls out over-tourism and positions this as the smarter alternative
@@ -460,6 +493,7 @@ Format:
 Keep it under 300 words. No em-dashes. Sound like a smart traveler, not a bot.`;
 
     if (!geminiKey) {
+      console.warn("Instagram template: no geminiKey param — using fallback caption");
       captionEl.textContent = fallbackCaption();
       generatedCaption = captionEl.textContent;
       return;
@@ -476,6 +510,13 @@ Keep it under 300 words. No em-dashes. Sound like a smart traveler, not a bot.`;
         })
       });
       const data = await res.json();
+      console.log("Gemini response status:", res.status, "data:", JSON.stringify(data).slice(0, 200));
+      if (!res.ok) {
+        console.error("Gemini error:", data?.error?.message || res.status);
+        captionEl.textContent = fallbackCaption();
+        generatedCaption = captionEl.textContent;
+        return;
+      }
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
       if (text) {
         generatedCaption = text.trim();
@@ -485,13 +526,14 @@ Keep it under 300 words. No em-dashes. Sound like a smart traveler, not a bot.`;
         generatedCaption = captionEl.textContent;
       }
     } catch(e) {
+      console.error("Gemini fetch error:", e.message);
       captionEl.textContent = fallbackCaption();
       generatedCaption = captionEl.textContent;
     }
   }
 
   function fallbackCaption() {
-    const restsLine = rests.length ? `\n\n🍽️ ${rests.join(" · ")}` : "";
+    const restsLine = featured.length ? `\n\n🍽️ ${featured.join(" · ")}` : "";
     return `Stop guessing your route.\n\n${dest} — ${duration}. Verified by a real traveler, not an algorithm.${quote ? `\n\n"${trimQuote(quote, 180)}"` : ""}${restsLine}\n\n✈️ Get the full Verified Path at tripcopycat.com 🔗 [Link in Bio]\n\n#TripCopycat #VerifiedPath #${cityOnly.replace(/\s+/g, "")}Travel #TravelItinerary #TravelGuide`;
   }
 
