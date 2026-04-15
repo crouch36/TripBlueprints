@@ -645,10 +645,7 @@ Do NOT use: #Travel #Wanderlust #Instagood #InstaTravel`;
 
     const doCapture = async () => {
       await logoReady;
-      // Swap logo to proxied URL for html2canvas capture
-      const logoEl = document.getElementById("logo-img");
-      const originalLogoSrc = logoEl ? logoEl.src : null;
-      if (logoEl) logoEl.src = `/api/image?url=${encodeURIComponent("https://www.tripcopycat.com/apple-touch-icon.png")}`;
+      // apple-touch-icon.png is same-domain — no proxy needed, html2canvas captures directly
       const bgEl = document.getElementById("post-bg");
       const originalBg = bgEl.style.backgroundImage;
       if (photoProxied && photo) {
@@ -662,7 +659,6 @@ Do NOT use: #Travel #Wanderlust #Instagood #InstaTravel`;
           logging: false,
         }).then(canvas => {
           bgEl.style.backgroundImage = originalBg;
-          if (logoEl && originalLogoSrc) logoEl.src = originalLogoSrc;
           const dataUrl = canvas.toDataURL("image/png");
 
           if (isIOS) {
@@ -694,7 +690,6 @@ Do NOT use: #Travel #Wanderlust #Instagood #InstaTravel`;
           btn.disabled = false;
         }).catch(() => {
           bgEl.style.backgroundImage = originalBg;
-          if (logoEl && originalLogoSrc) logoEl.src = originalLogoSrc;
           btn.textContent = "⬇ Download Image";
           btn.disabled = false;
           alert("Could not generate image — try screenshotting instead.");
