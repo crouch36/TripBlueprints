@@ -161,10 +161,10 @@
     /* Destination — big bold sans */
     .post-dest {
       font-family: 'DM Sans', 'Inter', sans-serif;
-      font-size: clamp(24px, 7vw, 44px);
+      font-size: clamp(18px, 5.5vw, 44px);
       font-weight: 800;
       color: #FFFFFF;
-      line-height: 1.05;
+      line-height: 1.1;
       text-shadow: 0 2px 16px rgba(0,0,0,0.5);
       letter-spacing: -0.02em;
       margin-bottom: 3%;
@@ -422,9 +422,14 @@
   const r3 = featured[2] || "";
 
   // ── Populate card ─────────────────────────────────────────────────────────
-  // Destination — uppercase city name only
-  const cityOnly = dest.split(",")[0].trim().toUpperCase();
-  document.getElementById("post-dest").textContent     = cityOnly;
+  // For display: keep all cities, drop only the trailing country/region
+  const destParts = dest.split(",").map(s => s.trim());
+  const cityDisplay = destParts.length > 2
+    ? destParts.slice(0, -1).join(", ").toUpperCase()  // "Prague, Vienna, Budapest"
+    : destParts[0].toUpperCase();                       // "Paris"
+  // cityOnly = first city only, used for hashtags
+  const cityOnly = destParts[0].replace(/\s+/g, "");
+  document.getElementById("post-dest").textContent     = cityDisplay;
   document.getElementById("post-duration").textContent = duration;
   document.getElementById("post-label").textContent    = "VERIFIED PATH: " + dest.toUpperCase();
   // Cut at last sentence boundary within 180 chars
