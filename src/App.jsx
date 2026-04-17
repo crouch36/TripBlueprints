@@ -2231,7 +2231,7 @@ function AdminQueueModal({ onClose, onApprove }) {
     setDetail(null);
   };
 
-  const statusCol = { pending:C.amber, flagged:C.red, approved:C.green, rejected:C.muted };
+  const statusCol = { pending:C.amber, flagged:C.red, approved:C.green, published:C.green, rejected:C.muted };
   const [regeocoding, setRegeocoding] = useState(false);
   const [regeocodeStatus, setRegeocodeStatus] = useState("");
 
@@ -2272,7 +2272,7 @@ function AdminQueueModal({ onClose, onApprove }) {
           {[["pending","Needs Review"],["completed","Completed"]].map(([tab, label]) => {
             const count = tab === "pending"
               ? submissions.filter(s => s.status === "pending" || s.status === "flagged").length
-              : submissions.filter(s => s.status === "approved" || s.status === "rejected").length;
+              : submissions.filter(s => s.status === "approved" || s.status === "rejected" || s.status === "published").length;
             return (
               <button key={tab} onClick={() => setQueueTab(tab)} style={{ padding:"12px 18px", fontSize:"12px", fontWeight:queueTab===tab?700:400, border:"none", background:"transparent", cursor:"pointer", color:queueTab===tab?C.slate:C.muted, borderBottom:queueTab===tab?`2px solid ${C.amber}`:"2px solid transparent", fontFamily:"inherit", display:"flex", alignItems:"center", gap:"6px" }}>
                 {label}
@@ -2283,13 +2283,13 @@ function AdminQueueModal({ onClose, onApprove }) {
         </div>
         <div style={{ padding:"16px 22px", maxHeight:"60vh", overflowY:"auto", WebkitOverflowScrolling:"touch" }}>
           {loading && <div style={{ textAlign:"center", padding:"40px", color:C.muted }}>Loading…</div>}
-          {!loading && submissions.filter(s => queueTab === "pending" ? (s.status === "pending" || s.status === "flagged") : (s.status === "approved" || s.status === "rejected")).length === 0 && (
+          {!loading && submissions.filter(s => queueTab === "pending" ? (s.status === "pending" || s.status === "flagged") : (s.status === "approved" || s.status === "rejected" || s.status === "published")).length === 0 && (
             <div style={{ textAlign:"center", padding:"40px", color:C.muted }}>
               <div style={{ fontSize:"32px", marginBottom:"10px" }}>{queueTab === "pending" ? "✅" : "💭"}</div>
               <div>{queueTab === "pending" ? "All caught up — nothing pending review" : "No completed submissions yet"}</div>
             </div>
           )}
-          {submissions.filter(s => queueTab === "pending" ? (s.status === "pending" || s.status === "flagged") : (s.status === "approved" || s.status === "rejected")).map(sub => (
+          {submissions.filter(s => queueTab === "pending" ? (s.status === "pending" || s.status === "flagged") : (s.status === "approved" || s.status === "rejected" || s.status === "published")).map(sub => (
             <div key={sub.id} style={{ background:C.white, border:`1px solid ${sub.status==="flagged"?C.red:C.tide}`, borderRadius:"12px", padding:"14px 16px", marginBottom:"10px" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"6px" }}>
                 <div>
